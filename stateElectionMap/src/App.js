@@ -1,25 +1,26 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import StateMap from './StateMap';
 import './App.css';
+import _ from 'lodash';
+import { loadAllData } from './DataHandling';
 
 class App extends Component {
+    state = {
+    }
+
+    componentDidMount() {
+        loadAllData(data => this.setState(data));
+    }
+
   render() {
+      if (!this.state.usTopoJson) {
+          return <div>Loading</div>;
+      }
+
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+        <StateMap usTopoJson={this.state.usTopoJson}
+                  usStateNames={this.state.usStateNames}/>
       </div>
     );
   }
