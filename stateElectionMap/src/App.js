@@ -12,17 +12,24 @@ class App extends Component {
         loadAllData(data => this.setState(data));
     }
 
-  render() {
+    render() {
       if (!this.state.usTopoJson) {
           return <div>Loading</div>;
       }
 
-    return (
-      <div className="App">
-        <StateMap usTopoJson={this.state.usTopoJson}
-                  usStateNames={this.state.usStateNames}/>
-      </div>
-    );
+      return (
+          <div className="App">
+            <svg width="1100" height="500">
+                <StateMap usTopoJson={this.state.usTopoJson}
+                          usStateNames={this.state.usStateNames}
+                          x={0}
+                          y={0}
+                          width={500}
+                          height={500}/>
+            </svg>
+
+          </div>
+      );
   }
 }
 
