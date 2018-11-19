@@ -13,7 +13,7 @@ class App extends Component {
             let stateColors = new Map();
             for (let i in this.state.usStateNames) {
                 let stateCode = this.state.usStateNames[i].code;
-                stateColors[stateCode] = '#ff0000';
+                stateColors[stateCode] = Math.random() < 0.5 ? '#ff0000' : '#0000ff';
             }
             this.setState({ stateColors: stateColors });
         }
