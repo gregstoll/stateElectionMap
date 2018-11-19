@@ -13,7 +13,11 @@ class App extends Component {
             let stateColors = new Map();
             for (let i in this.state.usStateNames) {
                 let stateCode = this.state.usStateNames[i].code;
-                stateColors[stateCode] = Math.random() < 0.5 ? '#ff0000' : '#0000ff';
+                //TODO optimize
+                let stateData = _.find(this.state.electionData, electionDataObj => electionDataObj.stateCode === stateCode);
+                if (stateData) {
+                    stateColors[stateCode] = stateData.rCount > stateData.dCount ? '#ff0000' : '#0000ff';
+                }
             }
             this.setState({ stateColors: stateColors });
         }
@@ -37,6 +41,7 @@ class App extends Component {
                 <StateMap usTopoJson={this.state.usTopoJson}
                           usStateNames={this.state.usStateNames}
                           stateColors={this.state.stateColors}
+                          electionData={this.state.electionData}
                           x={0}
                           y={0}
                           width={500}
