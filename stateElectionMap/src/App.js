@@ -9,12 +9,12 @@ class App extends Component {
     };
 
     changeColors() {
-        if (this.state.usStateNames) {
+        if (this.state.usStateNames && this.state.year) {
             let stateColors = new Map();
             for (let i in this.state.usStateNames) {
                 let stateCode = this.state.usStateNames[i].code;
                 //TODO optimize
-                let stateData = _.find(this.state.electionData, electionDataObj => electionDataObj.stateCode === stateCode);
+                let stateData = _.find(this.state.electionData[this.state.year], electionDataObj => electionDataObj.stateCode === stateCode);
                 if (stateData) {
                     stateColors[stateCode] = stateData.rCount > stateData.dCount ? '#ff0000' : '#0000ff';
                 }
@@ -25,7 +25,8 @@ class App extends Component {
 
     componentDidMount() {
         loadAllData(data => {
-            this.setState(data)
+            this.setState(data);
+            this.setState({ year: _.min(Object.keys(data.electionData)) });
             this.changeColors();
         });
     }
@@ -37,6 +38,7 @@ class App extends Component {
 
       return (
           <div className="App">
+              <div>Year {this.state.year}</div>
             <svg width="1100" height="500">
                 <StateMap usTopoJson={this.state.usTopoJson}
                           usStateNames={this.state.usStateNames}
