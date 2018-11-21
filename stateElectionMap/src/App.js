@@ -54,7 +54,7 @@ class App extends Component {
             </svg>
             <div>Year {this.state.year}</div>
             <div style={{width: 500}}>
-                <Slider min={2004} max={2016} step={4} value={parseInt(this.state.year, 10)} onChange={this.onSliderChange}/>
+                <Slider min={2000} max={2016} step={4} value={parseInt(this.state.year, 10)} onChange={this.onSliderChange}/>
             </div>
 
           </div>
