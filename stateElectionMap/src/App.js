@@ -1,34 +1,25 @@
 import React, { Component } from 'react';
 import StateMap from './StateMap';
-import './App.css';
 import _ from 'lodash';
 import { loadAllData } from './DataHandling';
+import Slider, { createSliderWithTooltip} from 'rc-slider';
+
+import 'rc-slider/assets/index.css';
+import './App.css';
 
 class App extends Component {
     state = {
     };
 
-    changeColors() {
-        if (this.state.usStateNames && this.state.year) {
-            let stateColors = new Map();
-            for (let i in this.state.usStateNames) {
-                let stateCode = this.state.usStateNames[i].code;
-                //TODO optimize
-                let stateData = _.find(this.state.electionData[this.state.year], electionDataObj => electionDataObj.stateCode === stateCode);
-                if (stateData) {
-                    stateColors[stateCode] = stateData.rCount > stateData.dCount ? '#ff0000' : '#0000ff';
-                }
-            }
-            this.setState({ stateColors: stateColors });
-        }
-    }
-
     componentDidMount() {
         loadAllData(data => {
-            this.setState(data);
-            this.setState({ year: _.min(Object.keys(data.electionData)) });
-            this.changeColors();
+            let yearState = {year: _.min(Object.keys(data.electionData))};
+            this.setState(Object.assign(yearState, data));
         });
+    }
+
+    onSliderChange = (value) => {
+        this.setState({ year: value });
     }
 
     render() {
@@ -36,19 +27,34 @@ class App extends Component {
           return <div>Loading</div>;
       }
 
+    let stateColors = new Map();
+    if (this.state.usStateNames && this.state.year) {
+        for (let i in this.state.usStateNames) {
+            let stateCode = this.state.usStateNames[i].code;
+            //TODO optimize
+            let stateData = _.find(this.state.electionData[this.state.year], electionDataObj => electionDataObj.stateCode === stateCode);
+            if (stateData) {
+                // TODO - cooler stuff
+                stateColors[stateCode] = stateData.rCount > stateData.dCount ? '#ff0000' : '#0000ff';
+            }
+        }
+    }
+
       return (
           <div className="App">
-              <div>Year {this.state.year}</div>
             <svg width="1100" height="500">
                 <StateMap usTopoJson={this.state.usTopoJson}
                           usStateNames={this.state.usStateNames}
-                          stateColors={this.state.stateColors}
-                          electionData={this.state.electionData}
+                          stateColors={stateColors}
                           x={0}
                           y={0}
                           width={500}
                           height={500}/>
             </svg>
+            <div>Year {this.state.year}</div>
+            <div style={{width: 500}}>
+                <Slider min={2008} max={2016} step={4} value={parseInt(this.state.year, 10)} onChange={this.onSliderChange}/>
+            </div>
 
           </div>
       );
