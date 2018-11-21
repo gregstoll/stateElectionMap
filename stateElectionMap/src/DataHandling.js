@@ -17,7 +17,7 @@ const cleanElectionResults = d => {
     };
 };
 
-const electionYears = [2008, 2012, 2016];
+const electionYears = [2004, 2008, 2012, 2016];
 
 //TODO - probably can make the caller async-aware
 export const loadAllData = async (callback = _.noop) => {
