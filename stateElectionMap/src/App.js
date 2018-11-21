@@ -53,6 +53,7 @@ class App extends Component {
             </svg>
             <div>Year {this.state.year}</div>
             <div style={{width: 500}}>
+                // https://react-component.github.io/slider/examples/slider.html
                 <Slider min={2008} max={2016} step={4} value={parseInt(this.state.year, 10)} onChange={this.onSliderChange}/>
             </div>
 
