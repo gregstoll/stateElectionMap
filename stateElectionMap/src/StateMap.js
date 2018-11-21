@@ -40,7 +40,7 @@ class StateMap extends Component {
             paths.push(path);
         }
         // <path d={this.geoPath(statesMesh)} style={{fill: 'none', stroke: '#000', strokeLinejoin: 'round'}} />
-        return <g transform={'translate(${this.props.x}, ${this.props.y})'}>
+        return <g transform={`translate(${this.props.x}, ${this.props.y})`}>
             {paths}
             </g>;
     }
