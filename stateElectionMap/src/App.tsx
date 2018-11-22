@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import StateMap from './StateMap';
+import { StateMap } from './StateMap';
 import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, ElectionData } from './DataHandling';
 import Slider, { createSliderWithTooltip} from 'rc-slider';
@@ -9,7 +9,7 @@ import './App.css';
 
 interface AppState {
     year: number,
-    // TODO - spread from DataCollection here?
+    //TODO - figure out this type and use it everywhere
     usTopoJson: any,
     stateNames: StateName[],
     electionData: ElectionData
@@ -81,7 +81,7 @@ class App extends Component<{}, AppState> {
           return <div>Loading</div>;
       }
 
-    let stateColors = new Map();
+    let stateColors = new Map<string, string>();
     if (this.state.stateNames && this.state.year) {
         for (let i in this.state.stateNames) {
             let stateCode = this.state.stateNames[i].code;

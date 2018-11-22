@@ -1,9 +1,24 @@
 import React, { Component } from 'react';
 import * as d3 from 'd3';
 import _ from 'lodash';
+import { StateName } from './DataHandling';
 import * as topojson from 'topojson'
 
-class StateMap extends Component {
+interface StateMapProps {
+    usTopoJson: any,
+    stateNames: StateName[],
+    stateColors: Map<string, string>,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+}
+
+export class StateMap extends Component<StateMapProps, {}> {
+    projection: d3.GeoProjection;
+    geoPath: d3.GeoPath;
+    quantize: d3.ScaleQuantize<Number>;
+
     constructor(props) {
         super(props);
 
@@ -21,6 +36,10 @@ class StateMap extends Component {
         //TODO
     }
 
+    stateClick = (event) => {
+        //alert(event.currentTarget.attributes["name"].v);
+    };
+
     render() {
         const us = this.props.usTopoJson;
         // this does only internal lines
@@ -36,7 +55,7 @@ class StateMap extends Component {
             // TODO optimize this
             let stateCode = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId).code;
             let color = (this.props.stateColors && this.props.stateColors[stateCode]) || 'rgb(240, 240, 240)';
-            let path = <path d={this.geoPath(topojson.feature(us, topoState))} style={{fill: color, stroke: '#000'}} key={stateCode} />
+            let path = <path name={stateCode} d={this.geoPath(topojson.feature(us, topoState))} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick} />
             paths.push(path);
         }
         // <path d={this.geoPath(statesMesh)} style={{fill: 'none', stroke: '#000', strokeLinejoin: 'round'}} />
@@ -45,5 +64,3 @@ class StateMap extends Component {
             </g>;
     }
 }
-
-export default StateMap;
