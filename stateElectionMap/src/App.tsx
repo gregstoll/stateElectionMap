@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { StateMap } from './StateMap';
 import _ from 'lodash';
-import { loadAllData, DataCollection, StateName, ElectionData } from './DataHandling';
+import { loadAllData, DataCollection, StateName, ElectionData, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
 import Slider, { createSliderWithTooltip} from 'rc-slider';
 
 import 'rc-slider/assets/index.css';
@@ -108,7 +108,7 @@ class App extends Component<{}, AppState> {
             </svg>
             <div>Year {this.state.year}</div>
             <div style={{width: 500}}>
-                <Slider min={2000} max={2016} step={4} value={this.state.year} onChange={this.onSliderChange}/>
+                <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange}/>
             </div>
 
           </div>

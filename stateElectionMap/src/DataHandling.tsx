@@ -31,6 +31,10 @@ const cleanElectionResults = (d: any): ElectionStateResult => {
 
 const electionYears = [2000, 2004, 2008, 2012, 2016];
 
+export const MIN_YEAR = 2000;
+export const MAX_YEAR = 2016;
+export const YEAR_STEP = 4;
+
 export interface ElectionData {
     [year: number]: ElectionStateResult[]
 };
@@ -46,9 +50,9 @@ export const loadAllData = async () : Promise<DataCollection> => {
     let us = await d3.json('data/us.json');
     let stateNames = await d3.tsv('data/us-state-names.tsv', cleanStateName);
     let electionDataPromises = {};
-    electionYears.forEach(value => {
-        electionDataPromises[value] = d3.csv('data/electionResults/' + value + '.csv', cleanElectionResults);
-    });
+    for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
+        electionDataPromises[year] = d3.csv('data/electionResults/' + year + '.csv', cleanElectionResults);
+    }
     let electionData = {};
     for (let i = 0; i < electionYears.length; ++i) {
         electionData[electionYears[i]] = await electionDataPromises[electionYears[i]];
