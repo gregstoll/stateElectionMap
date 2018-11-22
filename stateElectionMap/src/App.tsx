@@ -1,21 +1,36 @@
 import React, { Component } from 'react';
 import StateMap from './StateMap';
 import _ from 'lodash';
-import { loadAllData } from './DataHandling';
+import { loadAllData, DataCollection, StateName, ElectionData } from './DataHandling';
 import Slider, { createSliderWithTooltip} from 'rc-slider';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
 
-class App extends Component {
+interface AppState {
+    year: number,
+    // TODO - spread from DataCollection here?
+    usTopoJson: any,
+    stateNames: StateName[],
+    electionData: ElectionData
+}
+
+class App extends Component<{}, AppState> {
     state = {
+        year: 0,
+        usTopoJson: null,
+        stateNames: null,
+        electionData: null
     };
 
     componentDidMount() {
-        loadAllData(data => {
-            let yearState = {year: _.min(Object.keys(data.electionData))};
-            this.setState(Object.assign(yearState, data));
-        });
+        this.loadDataAsync();
+    }
+
+    async loadDataAsync() {
+        let data: DataCollection = await loadAllData();
+        let yearState = {year: parseInt(_.min(Object.keys(data.electionData)), 10)};
+        this.setState(Object.assign(yearState, data));
     }
 
     colorFromDAndRVote(dVote, rVote) {
@@ -67,9 +82,9 @@ class App extends Component {
       }
 
     let stateColors = new Map();
-    if (this.state.usStateNames && this.state.year) {
-        for (let i in this.state.usStateNames) {
-            let stateCode = this.state.usStateNames[i].code;
+    if (this.state.stateNames && this.state.year) {
+        for (let i in this.state.stateNames) {
+            let stateCode = this.state.stateNames[i].code;
             //TODO optimize
             let stateData = _.find(this.state.electionData[this.state.year], electionDataObj => electionDataObj.stateCode === stateCode);
             if (stateData) {
@@ -84,7 +99,7 @@ class App extends Component {
           <div className="App">
             <svg width="1100" height="500">
                 <StateMap usTopoJson={this.state.usTopoJson}
-                          usStateNames={this.state.usStateNames}
+                          stateNames={this.state.stateNames}
                           stateColors={stateColors}
                           x={0}
                           y={0}
@@ -93,7 +108,7 @@ class App extends Component {
             </svg>
             <div>Year {this.state.year}</div>
             <div style={{width: 500}}>
-                <Slider min={2000} max={2016} step={4} value={parseInt(this.state.year, 10)} onChange={this.onSliderChange}/>
+                <Slider min={2000} max={2016} step={4} value={this.state.year} onChange={this.onSliderChange}/>
             </div>
 
           </div>

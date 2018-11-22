@@ -34,7 +34,7 @@ class StateMap extends Component {
             let topoState = us.objects.states.geometries[i];
             let stateId = topoState.id;
             // TODO optimize this
-            let stateCode = _.find(this.props.usStateNames, stateNameObj => stateNameObj.id === stateId).code;
+            let stateCode = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId).code;
             let color = (this.props.stateColors && this.props.stateColors[stateCode]) || 'rgb(240, 240, 240)';
             let path = <path d={this.geoPath(topojson.feature(us, topoState))} style={{fill: color, stroke: '#000'}} key={stateCode} />
             paths.push(path);

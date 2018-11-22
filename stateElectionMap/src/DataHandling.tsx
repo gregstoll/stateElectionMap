@@ -1,13 +1,25 @@
 import * as d3 from 'd3';
 import _ from 'lodash';
 
-const cleanUSStateName = (d) => ({
+export interface StateName {
+    code: string,
+    id: number,
+    name: string
+};
+
+const cleanStateName = (d : any) : StateName => ({
     code: d.code,
     id: Number(d.id),
     name: d.name
 });
 
-const cleanElectionResults = d => {
+export interface ElectionStateResult {
+    stateCode: string,
+    dCount: number,
+    rCount: number
+};
+
+const cleanElectionResults = (d: any): ElectionStateResult => {
     let dKey = _.find(Object.keys(d), key => key.endsWith("(D)"));
     let rKey = _.find(Object.keys(d), key => key.endsWith("(R)"));
     return {
@@ -19,22 +31,31 @@ const cleanElectionResults = d => {
 
 const electionYears = [2000, 2004, 2008, 2012, 2016];
 
-//TODO - probably can make the caller async-aware
-export const loadAllData = async (callback = _.noop) => {
+export interface ElectionData {
+    [year: number]: ElectionStateResult[]
+};
+
+export interface DataCollection {
+    usTopoJson: any,
+    stateNames: StateName[],
+    electionData: ElectionData
+};
+
+export const loadAllData = async () : Promise<DataCollection> => {
     //TODO - parallelize
     let us = await d3.json('data/us.json');
-    let usStateNames = await d3.tsv('data/us-state-names.tsv', cleanUSStateName);
+    let stateNames = await d3.tsv('data/us-state-names.tsv', cleanStateName);
     let electionDataPromises = {};
     electionYears.forEach(value => {
         electionDataPromises[value] = d3.csv('data/electionResults/' + value + '.csv', cleanElectionResults);
     });
-    let electionData = {}; //await d3.csv('data/electionResults/2012.csv', cleanElectionResults);
+    let electionData = {};
     for (let i = 0; i < electionYears.length; ++i) {
         electionData[electionYears[i]] = await electionDataPromises[electionYears[i]];
     }
-	callback({
-	    usTopoJson: us,
-        usStateNames: usStateNames,
+    return {
+        usTopoJson: us,
+        stateNames: stateNames,
         electionData: electionData
-	});
+    };
 };
