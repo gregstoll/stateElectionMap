@@ -46,9 +46,8 @@ export interface DataCollection {
 };
 
 export const loadAllData = async () : Promise<DataCollection> => {
-    //TODO - parallelize
-    let us = await d3.json('data/us.json');
-    let stateNames = await d3.tsv('data/us-state-names.tsv', cleanStateName);
+    let usPromise = d3.json('data/us.json');
+    let stateNamesPromise = d3.tsv('data/us-state-names.tsv', cleanStateName);
     let electionDataPromises = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
         electionDataPromises[year] = d3.csv('data/electionResults/' + year + '.csv', cleanElectionResults);
@@ -57,6 +56,8 @@ export const loadAllData = async () : Promise<DataCollection> => {
     for (let i = 0; i < electionYears.length; ++i) {
         electionData[electionYears[i]] = await electionDataPromises[electionYears[i]];
     }
+    let us = await usPromise;
+    let stateNames = await stateNamesPromise;
     return {
         usTopoJson: us,
         stateNames: stateNames,
