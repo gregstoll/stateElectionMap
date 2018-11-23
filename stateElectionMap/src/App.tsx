@@ -36,51 +36,51 @@ class App extends Component<{}, AppState> {
         this.setState(Object.assign(yearState, data));
     }
 
-    colorFromDAndRVote(dVote: number, rVote: number, baselineDPercentage = 50) {
+    colorFromDAndRVote(dVote: number, rVote: number, totalVote: number, baselineDAdvantage = 0) {
         // http://colorbrewer2.org/?type=diverging&scheme=RdBu&n=11
         const _colors =
             ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'];
         
-        let dPercentage = (dVote * 100.0) / (dVote + rVote);
+        let dAdvantage = ((dVote - rVote) * 100.0) / totalVote;
         // 5 red, 5 blue (don't use middle one)
         const increment = 3;
-        if (dPercentage < baselineDPercentage - 4 * increment) {
+        if (dAdvantage < baselineDAdvantage - 4 * increment) {
             return _colors[0];
         }
-        if (dPercentage < baselineDPercentage - 3 * increment) {
+        if (dAdvantage < baselineDAdvantage - 3 * increment) {
             return _colors[1];
         }
-        if (dPercentage < baselineDPercentage - 2 * increment) {
+        if (dAdvantage < baselineDAdvantage - 2 * increment) {
             return _colors[2];
         }
-        if (dPercentage < baselineDPercentage - 1 * increment) {
+        if (dAdvantage < baselineDAdvantage - 1 * increment) {
             return _colors[3];
         }
-        if (dPercentage < baselineDPercentage) {
+        if (dAdvantage < baselineDAdvantage) {
             return _colors[4];
         }
 
-        if (dPercentage > baselineDPercentage + 4 * increment) {
+        if (dAdvantage > baselineDAdvantage + 4 * increment) {
             return _colors[10];
         }
-        if (dPercentage > baselineDPercentage + 3 * increment) {
+        if (dAdvantage > baselineDAdvantage + 3 * increment) {
             return _colors[9];
         }
-        if (dPercentage > baselineDPercentage + 2 * increment) {
+        if (dAdvantage > baselineDAdvantage + 2 * increment) {
             return _colors[8];
         }
-        if (dPercentage > baselineDPercentage + increment) {
+        if (dAdvantage > baselineDAdvantage + increment) {
             return _colors[7];
         }
         return _colors[6];
     }
 
-    textFromDPercentage(dPercentage: number, baselineDPercentage = 50) {
-        if (dPercentage > baselineDPercentage) {
-            return "D +" + (dPercentage - baselineDPercentage).toFixed(1) + "%";
+    textFromDPercentage(dAdvantage: number) {
+        if (dAdvantage > 0) {
+            return "D +" + (dAdvantage).toFixed(1) + "%";
         }
-        if (dPercentage < baselineDPercentage) {
-            return "R +" + (baselineDPercentage - dPercentage).toFixed(1) + "%";
+        if (dAdvantage < 0) {
+            return "R +" + (-1 * dAdvantage).toFixed(1) + "%";
         }
         return "Even";
     }
@@ -95,23 +95,24 @@ class App extends Component<{}, AppState> {
       }
 
     let stateColors = new Map<string, string>();
-    let nationalDPercentage = 50;
+    let nationalDAdvantage = 0;
     if (this.state.stateNames && this.state.year) {
         let electionData = this.state.electionData[this.state.year];
-        let dTotal = 0, rTotal = 0;
+        let dTotal = 0, rTotal = 0, allTotal = 0;
         electionData.forEach(value => {
             dTotal += value.dCount;
             rTotal += value.rCount;
+            allTotal += value.totalCount;
         });
-        nationalDPercentage = (dTotal * 100.0) / (dTotal + rTotal);
-        let baselineDPercentage = (this.state.rawResults) ? 50 : nationalDPercentage;
+        nationalDAdvantage = ((dTotal - rTotal) * 100.0) / allTotal;
+        let baselineDAdvantage = (this.state.rawResults) ? 0 : nationalDAdvantage;
         for (let i in this.state.stateNames) {
             let stateCode = this.state.stateNames[i].code;
             //TODO optimize
             let stateData = _.find(electionData, electionDataObj => electionDataObj.stateCode === stateCode);
             if (stateData) {
                 // TODO - cooler stuff
-                stateColors[stateCode] = this.colorFromDAndRVote(stateData.dCount, stateData.rCount, baselineDPercentage);
+                stateColors[stateCode] = this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage);
             }
         }
     }
@@ -134,7 +135,7 @@ class App extends Component<{}, AppState> {
                       <Button active={!this.state.rawResults} onClick={() => this.setState({ rawResults: false })}>Relative to popular vote</Button>
                   </Button.Group>
               </div>
-              <div>Year {this.state.year} Popular vote: {this.textFromDPercentage(nationalDPercentage, 100 - nationalDPercentage)}</div>
+              <div>Year {this.state.year} Popular vote: {this.textFromDPercentage(nationalDAdvantage)}</div>
             <div style={{width: 500}}>
                 <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange}/>
             </div>
