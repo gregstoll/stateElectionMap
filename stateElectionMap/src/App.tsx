@@ -3,13 +3,14 @@ import { StateMap } from './StateMap';
 import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, ElectionData, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
-import Slider, { createSliderWithTooltip} from 'rc-slider';
+import Slider, { createSliderWithTooltip } from 'rc-slider';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
 
 interface AppState {
     year: number,
+    selectedStateCode: string,
     rawResults: boolean,
     //TODO - figure out this type and use it everywhere
     usTopoJson: any,
@@ -20,6 +21,7 @@ interface AppState {
 class App extends Component<{}, AppState> {
     state : AppState = {
         year: 0,
+        selectedStateCode: null,
         rawResults: true,
         usTopoJson: null,
         stateNames: null,
@@ -89,6 +91,10 @@ class App extends Component<{}, AppState> {
         this.setState({ year: value });
     }
 
+    onStateSelected = (stateCode) => {
+        this.setState({ selectedStateCode: stateCode });
+    }
+
     render() {
       if (!this.state.usTopoJson) {
           return <div>Loading</div>;
@@ -124,6 +130,7 @@ class App extends Component<{}, AppState> {
                 <StateMap usTopoJson={this.state.usTopoJson}
                           stateNames={this.state.stateNames}
                           stateColors={stateColors}
+                          stateSelectedCallback={this.onStateSelected}
                           x={0}
                           y={0}
                           width={500}
@@ -136,6 +143,9 @@ class App extends Component<{}, AppState> {
                   </Button.Group>
               </div>
               <div>Year {this.state.year} Popular vote: {this.textFromDPercentage(nationalDAdvantage)}</div>
+              {this.state.selectedStateCode !== null &&
+                  <div>{this.state.selectedStateCode}</div>
+              }
             <div style={{width: 500}}>
                 <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange}/>
             </div>

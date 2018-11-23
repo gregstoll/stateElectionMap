@@ -8,6 +8,7 @@ interface StateMapProps {
     usTopoJson: any,
     stateNames: StateName[],
     stateColors: Map<string, string>,
+    stateSelectedCallback: (stateCode: string) => void,
     x: number,
     y: number,
     width: number,
@@ -36,8 +37,9 @@ export class StateMap extends Component<StateMapProps, {}> {
         //TODO
     }
 
-    stateClick = (event) => {
-        //alert(event.currentTarget.attributes["name"].v);
+    stateClick = event => {
+        let stateCode: string = event.currentTarget.attributes["name"].value;
+        this.props.stateSelectedCallback(stateCode);
     };
 
     render() {
