@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { StateMap } from './StateMap';
 import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
-import { loadAllData, DataCollection, StateName, ElectionData, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
+import { loadAllData, DataCollection, StateName, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
 import Slider, { createSliderWithTooltip } from 'rc-slider';
 
 import 'rc-slider/assets/index.css';
@@ -36,6 +36,11 @@ class App extends Component<{}, AppState> {
         let data: DataCollection = await loadAllData();
         let yearState = {year: parseInt(_.min(Object.keys(data.electionData)), 10)};
         this.setState(Object.assign(yearState, data));
+    }
+
+    dAdvantageFromVotes(stateData: ElectionStateResult, baselineDAdvantage = 0): number {
+        let dAdvantage = ((stateData.dCount - stateData.rCount) * 100.0) / stateData.totalCount;
+        return dAdvantage - baselineDAdvantage;
     }
 
     colorFromDAndRVote(dVote: number, rVote: number, totalVote: number, baselineDAdvantage = 0) {
@@ -77,12 +82,12 @@ class App extends Component<{}, AppState> {
         return _colors[6];
     }
 
-    textFromDPercentage(dAdvantage: number) {
+    textFromDAdvantage(dAdvantage: number) {
         if (dAdvantage > 0) {
-            return "D +" + (dAdvantage).toFixed(1) + "%";
+            return "D+" + (dAdvantage).toFixed(1) + "%";
         }
         if (dAdvantage < 0) {
-            return "R +" + (-1 * dAdvantage).toFixed(1) + "%";
+            return "R+" + (-1 * dAdvantage).toFixed(1) + "%";
         }
         return "Even";
     }
@@ -101,6 +106,7 @@ class App extends Component<{}, AppState> {
       }
 
     let stateColors = new Map<string, string>();
+    let stateTitles = new Map<string, string>();
     let nationalDAdvantage = 0;
     if (this.state.stateNames && this.state.year) {
         let electionData = this.state.electionData[this.state.year];
@@ -117,8 +123,10 @@ class App extends Component<{}, AppState> {
             //TODO optimize
             let stateData = _.find(electionData, electionDataObj => electionDataObj.stateCode === stateCode);
             if (stateData) {
-                // TODO - cooler stuff
+                // TODO - duplication or something
+                let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
                 stateColors[stateCode] = this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage);
+                stateTitles[stateCode] = this.textFromDAdvantage(dAdvantage);
             }
         }
     }
@@ -130,6 +138,7 @@ class App extends Component<{}, AppState> {
                 <StateMap usTopoJson={this.state.usTopoJson}
                           stateNames={this.state.stateNames}
                           stateColors={stateColors}
+                          stateTitles={stateTitles}
                           stateSelectedCallback={this.onStateSelected}
                           x={0}
                           y={0}
@@ -142,7 +151,7 @@ class App extends Component<{}, AppState> {
                       <Button active={!this.state.rawResults} onClick={() => this.setState({ rawResults: false })}>Relative to popular vote</Button>
                   </Button.Group>
               </div>
-              <div>Year {this.state.year} Popular vote: {this.textFromDPercentage(nationalDAdvantage)}</div>
+              <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
               {this.state.selectedStateCode !== null &&
                   <div>{this.state.selectedStateCode}</div>
               }

@@ -8,6 +8,7 @@ interface StateMapProps {
     usTopoJson: any,
     stateNames: StateName[],
     stateColors: Map<string, string>,
+    stateTitles: Map<string, string>,
     stateSelectedCallback: (stateCode: string) => void,
     x: number,
     y: number,
@@ -55,9 +56,15 @@ export class StateMap extends Component<StateMapProps, {}> {
             let topoState = us.objects.states.geometries[i];
             let stateId = topoState.id;
             // TODO optimize this
-            let stateCode = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId).code;
+            let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
+            let stateCode = stateNameObj.code;
             let color = (this.props.stateColors && this.props.stateColors[stateCode]) || 'rgb(240, 240, 240)';
-            let path = <path name={stateCode} d={this.geoPath(topojson.feature(us, topoState))} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick} />
+            let titleExtra = this.props.stateTitles && this.props.stateTitles[stateCode];
+            // TODO - don't show if not present
+            let title = `${stateNameObj.name}: ${titleExtra}`;
+            let path = <path name={stateCode} d={this.geoPath(topojson.feature(us, topoState))} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick}>
+                <title>{title}</title>
+            </path>;
             paths.push(path);
         }
         // <path d={this.geoPath(statesMesh)} style={{fill: 'none', stroke: '#000', strokeLinejoin: 'round'}} />
