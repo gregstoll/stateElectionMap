@@ -3,7 +3,8 @@ import { StateMap } from './StateMap';
 import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
-import Slider, { createSliderWithTooltip } from 'rc-slider';
+import Slider from 'rc-slider';
+import { LineChart } from 'react-easy-chart';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
@@ -21,7 +22,7 @@ interface AppState {
 class App extends Component<{}, AppState> {
     state : AppState = {
         year: 0,
-        selectedStateCode: null,
+        selectedStateCode: undefined,
         rawResults: true,
         usTopoJson: null,
         stateNames: null,
@@ -108,28 +109,56 @@ class App extends Component<{}, AppState> {
     let stateColors = new Map<string, string>();
     let stateTitles = new Map<string, string>();
     let nationalDAdvantage = 0;
-    if (this.state.stateNames && this.state.year) {
-        let electionData = this.state.electionData[this.state.year];
-        let dTotal = 0, rTotal = 0, allTotal = 0;
-        electionData.forEach(value => {
-            dTotal += value.dCount;
-            rTotal += value.rCount;
-            allTotal += value.totalCount;
-        });
-        nationalDAdvantage = ((dTotal - rTotal) * 100.0) / allTotal;
-        let baselineDAdvantage = (this.state.rawResults) ? 0 : nationalDAdvantage;
-        for (let i in this.state.stateNames) {
-            let stateCode = this.state.stateNames[i].code;
-            //TODO optimize
-            let stateData = _.find(electionData, electionDataObj => electionDataObj.stateCode === stateCode);
-            if (stateData) {
-                // TODO - duplication or something
-                let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
-                stateColors[stateCode] = this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage);
-                stateTitles[stateCode] = this.textFromDAdvantage(dAdvantage);
+        let lineChart = undefined;
+        if (this.state.stateNames && this.state.year) {
+            let electionData = this.state.electionData[this.state.year];
+            let dTotal = 0, rTotal = 0, allTotal = 0;
+            electionData.forEach(value => {
+                dTotal += value.dCount;
+                rTotal += value.rCount;
+                allTotal += value.totalCount;
+            });
+            nationalDAdvantage = ((dTotal - rTotal) * 100.0) / allTotal;
+            let baselineDAdvantage = (this.state.rawResults) ? 0 : nationalDAdvantage;
+            for (let i in this.state.stateNames) {
+                let stateCode = this.state.stateNames[i].code;
+                //TODO optimize
+                let stateData = _.find(electionData, electionDataObj => electionDataObj.stateCode === stateCode);
+                if (stateData) {
+                    // TODO - duplication or something
+                    let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
+                    stateColors[stateCode] = this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage);
+                    stateTitles[stateCode] = this.textFromDAdvantage(dAdvantage);
+                }
+            }
+
+            if (this.state.selectedStateCode) {
+                let data = [];
+                for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
+                    let yearBaselineDAdvantage = 0;
+                    let electionData = this.state.electionData[year];
+                    if (!this.state.rawResults) {
+                        //TODO - extract this and use above
+                        electionData.forEach(value => {
+                            dTotal += value.dCount;
+                            rTotal += value.rCount;
+                            allTotal += value.totalCount;
+                        });
+                        yearBaselineDAdvantage = ((dTotal - rTotal) * 100.0) / allTotal;
+                    }
+                    //TODO optimize
+                    let stateData = _.find(electionData, electionDataObj => electionDataObj.stateCode === this.state.selectedStateCode);
+                    data.push({ x: year, y: this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage) });
+                }
+                // TODO optimize this
+                let stateNameObj = _.find(this.state.stateNames, stateNameObj => stateNameObj.code === this.state.selectedStateCode);
+                lineChart = <div style={{ width: 600 }}>{stateNameObj.name}
+                    <LineChart width={500} height={300}
+                        margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
+                        data={[data]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} xType={'text'} xTicks={data.length - 1} />
+                    </div>;
             }
         }
-    }
 
         // https://react-component.github.io/slider/examples/slider.html
       return (
@@ -152,9 +181,7 @@ class App extends Component<{}, AppState> {
                   </Button.Group>
               </div>
               <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
-              {this.state.selectedStateCode !== null &&
-                  <div>{this.state.selectedStateCode}</div>
-              }
+              {lineChart}
             <div style={{width: 500}}>
                 <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange}/>
             </div>
