@@ -93,6 +93,27 @@ class App extends Component<{}, AppState> {
         return "Even";
     }
 
+    private getNationalDAdvantage(electionData: Map<string, ElectionStateResult>) {
+        let dTotal = 0, rTotal = 0, allTotal = 0;
+        //for (const Array.from(electionData.values()).forEach(value => {
+        //for (const value of Array.from(electionData.values())) {
+        //const values: any = electionData.values();
+        //for (let [key, value] of Array.from(electionData)) {
+        //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
+        let a = Array.from(electionData.entries());
+        for (let [key, value] of a) {
+        //for (let entry of Array.from(electionData.entries())) {
+        //TODO ugh this is so gross
+        //for (let i = 0; i < values.length; ++i) {
+            //const value = values[i];
+            //let value = electionData[key];
+            dTotal += value.dCount;
+            rTotal += value.rCount;
+            allTotal += value.totalCount;
+        }
+        return ((dTotal - rTotal) * 100.0) / allTotal;
+    }
+
     onSliderChange = (value) => {
         this.setState({ year: value });
     }
@@ -107,47 +128,31 @@ class App extends Component<{}, AppState> {
       }
 
     let stateColors = new Map<string, string>();
-    let stateTitles = new Map<string, string>();
-    let nationalDAdvantage = 0;
+        let stateTitles = new Map<string, string>();
+        let nationalDAdvantage = 0;
         let lineChart = undefined;
+        //TODO - just return here, can then move nationalDAdvantage down
         if (this.state.stateNames && this.state.year) {
             let electionData = this.state.electionData[this.state.year];
-            let dTotal = 0, rTotal = 0, allTotal = 0;
-            electionData.forEach(value => {
-                dTotal += value.dCount;
-                rTotal += value.rCount;
-                allTotal += value.totalCount;
-            });
-            nationalDAdvantage = ((dTotal - rTotal) * 100.0) / allTotal;
-            let baselineDAdvantage = (this.state.rawResults) ? 0 : nationalDAdvantage;
+            nationalDAdvantage = this.getNationalDAdvantage(electionData);
+            let baselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(electionData);
             for (let i in this.state.stateNames) {
                 let stateCode = this.state.stateNames[i].code;
-                //TODO optimize
-                let stateData = _.find(electionData, electionDataObj => electionDataObj.stateCode === stateCode);
+                let stateData = electionData.get(stateCode);
                 if (stateData) {
                     // TODO - duplication or something
                     let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
-                    stateColors[stateCode] = this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage);
-                    stateTitles[stateCode] = this.textFromDAdvantage(dAdvantage);
+                    stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
+                    stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage));
                 }
             }
 
             if (this.state.selectedStateCode) {
                 let data = [];
                 for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
-                    let yearBaselineDAdvantage = 0;
-                    let electionData = this.state.electionData[year];
-                    if (!this.state.rawResults) {
-                        //TODO - extract this and use above
-                        electionData.forEach(value => {
-                            dTotal += value.dCount;
-                            rTotal += value.rCount;
-                            allTotal += value.totalCount;
-                        });
-                        yearBaselineDAdvantage = ((dTotal - rTotal) * 100.0) / allTotal;
-                    }
-                    //TODO optimize
-                    let stateData = _.find(electionData, electionDataObj => electionDataObj.stateCode === this.state.selectedStateCode);
+                    let yearElectionData = this.state.electionData[year];
+                    let yearBaselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(yearElectionData);
+                    let stateData = yearElectionData.get(this.state.selectedStateCode);
                     data.push({ x: year, y: this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage) });
                 }
                 // TODO optimize this

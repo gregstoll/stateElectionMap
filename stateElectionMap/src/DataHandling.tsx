@@ -36,7 +36,7 @@ export const MAX_YEAR = 2016;
 export const YEAR_STEP = 4;
 
 export interface ElectionData {
-    [year: number]: ElectionStateResult[]
+    [year: number]: Map<string, ElectionStateResult>
 };
 
 export interface DataCollection {
@@ -54,7 +54,11 @@ export const loadAllData = async () : Promise<DataCollection> => {
     }
     let electionData = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
-        electionData[year] = await electionDataPromises[year];
+        let data: ElectionStateResult[] = await electionDataPromises[year];
+        electionData[year] = new Map<string, ElectionStateResult>();
+        data.forEach(stateResult => {
+            electionData[year].set(stateResult.stateCode, stateResult);
+        });
     }
     let us = await usPromise;
     let stateNames = await stateNamesPromise;

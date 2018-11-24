@@ -58,8 +58,8 @@ export class StateMap extends Component<StateMapProps, {}> {
             // TODO optimize this
             let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
             let stateCode = stateNameObj.code;
-            let color = (this.props.stateColors && this.props.stateColors[stateCode]) || 'rgb(240, 240, 240)';
-            let titleExtra = this.props.stateTitles && this.props.stateTitles[stateCode];
+            let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
+            let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
             // TODO - don't show if not present
             let title = `${stateNameObj.name}: ${titleExtra}`;
             let path = <path name={stateCode} d={this.geoPath(topojson.feature(us, topoState))} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick}>
@@ -67,7 +67,6 @@ export class StateMap extends Component<StateMapProps, {}> {
             </path>;
             paths.push(path);
         }
-        // <path d={this.geoPath(statesMesh)} style={{fill: 'none', stroke: '#000', strokeLinejoin: 'round'}} />
         return <g transform={`translate(${this.props.x}, ${this.props.y})`}>
             {paths}
             </g>;
