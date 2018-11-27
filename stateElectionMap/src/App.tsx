@@ -5,6 +5,7 @@ import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
 import Slider from 'rc-slider';
 import { LineChart } from 'react-easy-chart';
+import * as d3 from 'd3';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
@@ -14,7 +15,9 @@ interface AppState {
     selectedStateCode: string,
     rawResults: boolean,
     //TODO - figure out this type and use it everywhere
+    //TODO - combine with DataCollection I guess
     usTopoJson: any,
+    cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
     stateNames: StateName[],
     electionData: ElectionData
 }
@@ -25,6 +28,7 @@ class App extends Component<{}, AppState> {
         selectedStateCode: undefined,
         rawResults: true,
         usTopoJson: null,
+        cartogram: null,
         stateNames: null,
         electionData: null
     };
@@ -148,19 +152,21 @@ class App extends Component<{}, AppState> {
             }
 
             if (this.state.selectedStateCode) {
-                let data = [];
+                let data = [], zeroes = [];
                 for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
                     let yearElectionData = this.state.electionData[year];
                     let yearBaselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(yearElectionData);
                     let stateData = yearElectionData.get(this.state.selectedStateCode);
                     data.push({ x: year, y: this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage) });
+                    zeroes.push({ x: year, y: 0 });
                 }
                 // TODO optimize this
                 let stateNameObj = _.find(this.state.stateNames, stateNameObj => stateNameObj.code === this.state.selectedStateCode);
                 lineChart = <div style={{ width: 600 }}>{stateNameObj.name}
                     <LineChart width={500} height={300}
                         margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
-                        data={[data]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} xType={'text'} xTicks={data.length - 1} />
+                        data={[data, zeroes]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} lineColors={['green', 'gray']}
+                        xType={'text'} xTicks={data.length - 1} />
                     </div>;
             }
         }

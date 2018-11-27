@@ -41,17 +41,26 @@ export interface ElectionData {
 
 export interface DataCollection {
     usTopoJson: any,
+    cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
     stateNames: StateName[],
     electionData: ElectionData
 };
 
+const getCartogramAsync = async (): Promise<d3.Selection<HTMLElement, () => any, null, undefined>> => {
+    const xml = await d3.xml('data/cartograms/fivethirtyeight.svg', { headers: new Headers({ "Content-Type": "image/svg+xml" }) });
+    //TODO error handling
+    return d3.select(xml.documentElement);
+};
+
 export const loadAllData = async () : Promise<DataCollection> => {
+    //TODO error handling
     let usPromise = d3.json('data/us.json');
     let stateNamesPromise = d3.tsv('data/us-state-names.tsv', cleanStateName);
     let electionDataPromises = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
         electionDataPromises[year] = d3.csv('data/electionResults/' + year + '.csv', cleanElectionResults);
     }
+    let cartogramPromise = getCartogramAsync();
     let electionData = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
         let data: ElectionStateResult[] = await electionDataPromises[year];
@@ -62,8 +71,10 @@ export const loadAllData = async () : Promise<DataCollection> => {
     }
     let us = await usPromise;
     let stateNames = await stateNamesPromise;
+    let cartogram = await cartogramPromise;
     return {
         usTopoJson: us,
+        cartogram: cartogram,
         stateNames: stateNames,
         electionData: electionData
     };
