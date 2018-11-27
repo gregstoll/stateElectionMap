@@ -1,0 +1,11 @@
+- state codes on states
+- show state codes in white for dark colored states
+- data back to 1960?
+- play animation
+- rollover points on graph
+- make graph always show +-2
+- get rid of border lines on graph?
+- writeup
+- url fragments
+- UI cleanup
+- TODOs
