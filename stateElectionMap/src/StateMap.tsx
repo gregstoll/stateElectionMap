@@ -3,13 +3,17 @@ import * as d3 from 'd3';
 import _ from 'lodash';
 import { StateName } from './DataHandling';
 import * as topojson from 'topojson'
+import polylabel from 'polylabel';
 
+//TODO - make StateMap own the usTopoJson and cartogram stuff (including fetching it)
 interface StateMapProps {
     usTopoJson: any,
+    cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
     stateNames: StateName[],
     stateColors: Map<string, string>,
     stateTitles: Map<string, string>,
     stateSelectedCallback: (stateCode: string) => void,
+    isCartogram: boolean,
     x: number,
     y: number,
     width: number,
@@ -43,29 +47,76 @@ export class StateMap extends Component<StateMapProps, {}> {
         this.props.stateSelectedCallback(stateCode);
     };
 
+    getPath = (stateCode: string, stateName: string, path: string): JSX.Element => {
+            let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
+            let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
+            //TODO - throws for non-cartogram
+            //let parsedPath = this.parsePath(path);
+            //TODO - this calculation returns NaN's
+            //let center = this.getCenters(stateCode, parsedPath);
+            // TODO - don't show if not present
+            let title = `${stateName}: ${titleExtra}`;
+            //<text x={center[0][0]} y={center[0][1]} stroke={"black"}>{stateCode}</text>
+            return (<path name={stateCode} d={path} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick}>
+                <title>{title}</title>
+            </path>);
+    };
+
+    getCenters(stateCode : string, shapes: topojson.Polygon[]) {
+        return shapes.map(function (shape) {
+
+            var flattened;
+
+            if (shape.length > 1 || (stateCode === "AK" || stateCode === "HI")) {
+                flattened = shape.reduce(function (prev, ring) {
+                    return prev.concat(ring);
+                }, []);
+                return polylabel([d3.polygonHull(flattened)]);
+            }
+
+            return polylabel(shape);
+        });
+    }
+
+    parsePath(str: string) : number[][][] {
+        var polys = str.replace(/^M|Z$/g, "").split("ZM").map(function (poly) {
+            return poly.split("L").map(function (pair) {
+                return pair.split(",").map(function (point) {
+                    return +point;
+                });
+            });
+        });
+        return polys;
+    }
+
     render() {
-        const us = this.props.usTopoJson;
-        // this does only internal lines
-        //const statesMesh = topojson.mesh(us, us.objects.states, (a, b) => a !== b);
-        // this does everything
-        //const statesMesh = topojson.mesh(us, us.objects.states, (a, b) => true);
         // https://d3-geomap.github.io/map/choropleth/us-states/
         //const map = d3.geomap.choropleth().geofile('/d3-geomap/topojson/countries/USA.json').projection(this.projection);
         let paths = [];
-        for (let i = 0; i < us.objects.states.geometries.length; ++i) {
-            let topoState = us.objects.states.geometries[i];
-            let stateId = topoState.id;
-            // TODO optimize this
-            let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
-            let stateCode = stateNameObj.code;
-            let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
-            let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
-            // TODO - don't show if not present
-            let title = `${stateNameObj.name}: ${titleExtra}`;
-            let path = <path name={stateCode} d={this.geoPath(topojson.feature(us, topoState))} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick}>
-                <title>{title}</title>
-            </path>;
-            paths.push(path);
+        if (!this.props.isCartogram) {
+            const us = this.props.usTopoJson;
+            const geometries = us.objects.states.geometries;
+            for (let i = 0; i < geometries.length; ++i) {
+                let topoState = geometries[i];
+                let stateId = topoState.id;
+                // TODO optimize this
+                let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
+                let stateCode = stateNameObj.code;
+                paths.push(this.getPath(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState))));
+            }
+        }
+        else {
+            // good glaven, thought JS was done with this tomfoolery
+            let that = this;
+            let svgPaths = this.props.cartogram.selectAll("path").each(function() {
+                let thisPath = this as SVGPathElement;
+                let stateCode = thisPath.getAttribute("id");
+                // TODO optimize this
+                let stateNameObj = _.find(that.props.stateNames, stateNameObj => stateNameObj.code === stateCode);
+                let pathString = thisPath.getAttribute("d");
+                paths.push(that.getPath(stateCode, stateNameObj.name, pathString));
+            });
+
         }
         return <g transform={`translate(${this.props.x}, ${this.props.y})`}>
             {paths}

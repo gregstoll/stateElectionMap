@@ -14,6 +14,7 @@ interface AppState {
     year: number,
     selectedStateCode: string,
     rawResults: boolean,
+    isCartogram: boolean,
     //TODO - figure out this type and use it everywhere
     //TODO - combine with DataCollection I guess
     usTopoJson: any,
@@ -26,6 +27,7 @@ class App extends Component<{}, AppState> {
     state : AppState = {
         year: 0,
         selectedStateCode: undefined,
+        isCartogram: true,
         rawResults: true,
         usTopoJson: null,
         cartogram: null,
@@ -175,7 +177,9 @@ class App extends Component<{}, AppState> {
       return (
           <div className="App">
             <svg width="1100" height="500">
-                <StateMap usTopoJson={this.state.usTopoJson}
+                  <StateMap usTopoJson={this.state.usTopoJson}
+                          cartogram={this.state.cartogram}
+                          isCartogram={this.state.isCartogram}
                           stateNames={this.state.stateNames}
                           stateColors={stateColors}
                           stateTitles={stateTitles}
@@ -189,6 +193,10 @@ class App extends Component<{}, AppState> {
                   <Button.Group>
                       <Button active={this.state.rawResults} onClick={() => this.setState({ rawResults: true })}>Actual results</Button>
                       <Button active={!this.state.rawResults} onClick={() => this.setState({ rawResults: false })}>Relative to popular vote</Button>
+                  </Button.Group>
+                  <Button.Group>
+                      <Button active={!this.state.isCartogram} onClick={() => this.setState({ isCartogram: false })}>Normal</Button>
+                      <Button active={this.state.isCartogram} onClick={() => this.setState({ isCartogram: true })}>Cartogram</Button>
                   </Button.Group>
               </div>
               <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
