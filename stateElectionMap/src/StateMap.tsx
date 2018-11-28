@@ -4,6 +4,7 @@ import _ from 'lodash';
 import { StateName } from './DataHandling';
 import * as topojson from 'topojson'
 import polylabel from 'polylabel';
+import { isNullOrUndefined } from 'util';
 
 //TODO - make StateMap own the usTopoJson and cartogram stuff (including fetching it)
 interface StateMapProps {
@@ -47,52 +48,61 @@ export class StateMap extends Component<StateMapProps, {}> {
         this.props.stateSelectedCallback(stateCode);
     };
 
-    getPath = (stateCode: string, stateName: string, path: string): JSX.Element => {
-            let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
-            let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
-            //TODO - throws for non-cartogram
-            //let parsedPath = this.parsePath(path);
-            //TODO - this calculation returns NaN's
-            //let center = this.getCenters(stateCode, parsedPath);
-            // TODO - don't show if not present
-            let title = `${stateName}: ${titleExtra}`;
-            //<text x={center[0][0]} y={center[0][1]} stroke={"black"}>{stateCode}</text>
-            return (<path name={stateCode} d={path} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick}>
-                <title>{title}</title>
-            </path>);
+    //TODO rename
+    getPath = (stateCode: string, stateName: string, path: string): Array<JSX.Element> => {
+        if (isNullOrUndefined(path)) {
+            return [];
+        }
+        let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
+        let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
+        //TODO - throws for non-cartogram
+        let parsedPath = this.parsePath(path);
+        //TODO - this calculation returns NaN's
+        let center = this.getCenters(stateCode, parsedPath);
+        // TODO - don't show if not present
+        let title = `${stateName}: ${titleExtra}`;
+        let parts = [];
+        parts.push(<path name={stateCode} d={path} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick}>
+            <title>{title}</title>
+        </path>);
+        // TODO - actually center this?
+        // TODO - goes behind state boundaries (see NM)
+            parts.push(<text x={center[0][0]} y={center[0][1]} dy="0.25em" stroke={"black"}>{stateCode}</text>);
+            return parts;
     };
 
-    getCenters(stateCode : string, shapes: topojson.Polygon[]) {
-        return shapes.map(function (shape) {
-
-            var flattened;
-
+    getCenters(stateCode : string, shapes: Array<Array<[number, number]>>) {
+        return shapes.map(function (shape: Array<[number, number]>) {
             if (shape.length > 1 || (stateCode === "AK" || stateCode === "HI")) {
-                flattened = shape.reduce(function (prev, ring) {
-                    return prev.concat(ring);
-                }, []);
-                return polylabel([d3.polygonHull(flattened)]);
+                //TODO look at AK and a bunch of others in normal mode
+                //TODO is this right?
+                //flattened = shape.reduce(function (prev, ring) {
+                //    return prev.concat(ring);
+                //}, []);
+                //let hull = d3.polygonHull(flattened);
+                let hull = d3.polygonHull(shape);
+                return polylabel([hull]);
             }
 
-            return polylabel(shape);
+            return polylabel([shape]);
         });
     }
 
-    parsePath(str: string) : number[][][] {
-        var polys = str.replace(/^M|Z$/g, "").split("ZM").map(function (poly) {
-            return poly.split("L").map(function (pair) {
-                return pair.split(",").map(function (point) {
-                    return +point;
+    parsePath(str: string): Array<Array<[number, number]>> {
+        var polys = str.replace(/^M|Z$/g, "").split("ZM").map(function (poly : string) {
+            return poly.split("L").map(function (pair : string) {
+                return pair.split(",").map(function (point : string) {
+                    return parseFloat(point);
                 });
             });
         });
-        return polys;
+        return polys as Array<Array<[number, number]>>;
     }
 
     render() {
         // https://d3-geomap.github.io/map/choropleth/us-states/
         //const map = d3.geomap.choropleth().geofile('/d3-geomap/topojson/countries/USA.json').projection(this.projection);
-        let paths = [];
+        let paths: JSX.Element[]  = [];
         if (!this.props.isCartogram) {
             const us = this.props.usTopoJson;
             const geometries = us.objects.states.geometries;
@@ -102,7 +112,9 @@ export class StateMap extends Component<StateMapProps, {}> {
                 // TODO optimize this
                 let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
                 let stateCode = stateNameObj.code;
-                paths.push(this.getPath(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState))));
+                for (let path of this.getPath(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState)))) {
+                    paths.push(path);
+                }
             }
         }
         else {
@@ -114,9 +126,10 @@ export class StateMap extends Component<StateMapProps, {}> {
                 // TODO optimize this
                 let stateNameObj = _.find(that.props.stateNames, stateNameObj => stateNameObj.code === stateCode);
                 let pathString = thisPath.getAttribute("d");
-                paths.push(that.getPath(stateCode, stateNameObj.name, pathString));
+                for (let path of that.getPath(stateCode, stateNameObj.name, pathString)) {
+                    paths.push(path);
+                }
             });
-
         }
         return <g transform={`translate(${this.props.x}, ${this.props.y})`}>
             {paths}
