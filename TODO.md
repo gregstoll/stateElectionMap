@@ -3,12 +3,12 @@
 - play animation
 - rollover points on graph
 - make graph always show +-2
+- custom format for graph y-axis (D+5 versus R+5, etc)
 - get rid of border lines on graph?
 - writeup
 - url fragments
 - UI cleanup
-- TODOs
-- data from 1992
+- code TODOs
 - data from 1988
 - data from 1984
 - data from 1980
