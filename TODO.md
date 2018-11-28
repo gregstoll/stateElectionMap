@@ -1,6 +1,5 @@
 - state codes on states
 - show state codes in white for dark colored states
-- data back to 1960?
 - play animation
 - rollover points on graph
 - make graph always show +-2
@@ -9,3 +8,12 @@
 - url fragments
 - UI cleanup
 - TODOs
+- data from 1992
+- data from 1988
+- data from 1984
+- data from 1980
+- data from 1976
+- data from 1972
+- data from 1968
+- data from 1964
+- data from 1960
