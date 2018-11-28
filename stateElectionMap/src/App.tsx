@@ -41,7 +41,7 @@ class App extends Component<{}, AppState> {
 
     async loadDataAsync() {
         let data: DataCollection = await loadAllData();
-        let yearState = {year: parseInt(_.min(Object.keys(data.electionData)), 10)};
+        let yearState = {year: parseInt(_.max(Object.keys(data.electionData)), 10)};
         this.setState(Object.assign(yearState, data));
     }
 
