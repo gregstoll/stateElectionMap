@@ -155,19 +155,27 @@ class App extends Component<{}, AppState> {
 
             if (this.state.selectedStateCode) {
                 let data = [], zeroes = [];
+                let min = 0, max = 0;
                 for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
                     let yearElectionData = this.state.electionData[year];
                     let yearBaselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(yearElectionData);
                     let stateData = yearElectionData.get(this.state.selectedStateCode);
-                    data.push({ x: year, y: this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage) });
+                    let y = this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage);
+                    data.push({ x: year, y: y});
                     zeroes.push({ x: year, y: 0 });
+
+                    min = Math.min(min, y);
+                    max = Math.max(max, y);
                 }
                 // TODO optimize this
                 let stateNameObj = _.find(this.state.stateNames, stateNameObj => stateNameObj.code === this.state.selectedStateCode);
+                let yMin = Math.min(-2, min);
+                let yMax = Math.max(2, max);
                 lineChart = <div style={{ width: 600 }}>{stateNameObj.name}
                     <LineChart width={500} height={300}
                         margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
                         data={[data, zeroes]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} lineColors={['green', 'gray']}
+                        yDomainRange={[yMin, yMax]}
                         xType={'text'} xTicks={data.length - 1} />
                 </div>;
             }
