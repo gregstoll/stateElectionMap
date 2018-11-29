@@ -99,6 +99,7 @@ class App extends Component<{}, AppState> {
         return "Even";
     }
 
+    //TODO - precalculate this when fetch data
     private getNationalDAdvantage(electionData: Map<string, ElectionStateResult>) {
         let dTotal = 0, rTotal = 0, allTotal = 0;
         //for (const Array.from(electionData.values()).forEach(value => {
