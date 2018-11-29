@@ -1,0 +1,17 @@
+path {
+    stroke-width: 2px;
+    stroke: #fff;
+}
+
+text {
+    font: 20px Helvetica, Arial, sans-serif;
+    fill: #999;
+    font-weight: 500;
+}
+
+g text {
+    text-anchor: middle;
+    font-size: 10px;
+    font-weight: 200;
+    fill: #444;
+}

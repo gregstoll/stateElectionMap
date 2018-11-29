@@ -5,6 +5,10 @@ import { StateName } from './DataHandling';
 import * as topojson from 'topojson'
 import polylabel from 'polylabel';
 import { isNullOrUndefined } from 'util';
+//TODO - namespace this, sheesh
+import parse from 'parse-color';
+
+import './StateMap.css';
 
 //TODO - make StateMap own the usTopoJson and cartogram stuff (including fetching it)
 interface StateMapProps {
@@ -48,28 +52,38 @@ export class StateMap extends Component<StateMapProps, {}> {
         this.props.stateSelectedCallback(stateCode);
     };
 
-    //TODO rename
-    getPath = (stateCode: string, stateName: string, path: string): Array<JSX.Element> => {
+    getSVGPaths = (stateCode: string, stateName: string, path: string): Array<JSX.Element> => {
         if (isNullOrUndefined(path)) {
             return [];
         }
         let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
         let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
-        //TODO - throws for non-cartogram
         let parsedPath = this.parsePath(path);
-        //TODO - this calculation returns NaN's
         let center = this.getCenters(stateCode, parsedPath);
         // TODO - don't show if not present
         let title = `${stateName}: ${titleExtra}`;
         let parts = [];
-        parts.push(<path name={stateCode} d={path} style={{ fill: color, stroke: '#000' }} key={stateCode} onClick={this.stateClick}>
+        parts.push(<path name={stateCode} d={path} style={{ fill: color }} key={stateCode} onClick={this.stateClick}>
             <title>{title}</title>
         </path>);
-        // TODO - actually center this?
         // TODO - goes behind state boundaries (see NM)
-            parts.push(<text x={center[0][0]} y={center[0][1]} dy="0.25em" stroke={"black"}>{stateCode}</text>);
+            parts.push(<text x={center[0][0]} y={center[0][1]} dy="0.25em" stroke={this.getLabelColor(color)}>{stateCode}</text>);
             return parts;
     };
+
+    getLabelColor(backgroundColor: string): string {
+        let backgroundParsedColor = parse(backgroundColor);
+        let hsl : number[] = backgroundParsedColor.hsl;
+        if (isNullOrUndefined(hsl)) {
+            return "#222";
+        }
+        let l: number = hsl[2];
+        if (l > 40) {
+            return "#222";
+        } else {
+            return "#ddd";
+        }
+    }
 
     getCenters(stateCode : string, shapes: Array<Array<[number, number]>>) {
         return shapes.map(function (shape: Array<[number, number]>) {
@@ -112,7 +126,7 @@ export class StateMap extends Component<StateMapProps, {}> {
                 // TODO optimize this
                 let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
                 let stateCode = stateNameObj.code;
-                for (let path of this.getPath(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState)))) {
+                for (let path of this.getSVGPaths(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState)))) {
                     paths.push(path);
                 }
             }
@@ -126,7 +140,7 @@ export class StateMap extends Component<StateMapProps, {}> {
                 // TODO optimize this
                 let stateNameObj = _.find(that.props.stateNames, stateNameObj => stateNameObj.code === stateCode);
                 let pathString = thisPath.getAttribute("d");
-                for (let path of that.getPath(stateCode, stateNameObj.name, pathString)) {
+                for (let path of that.getSVGPaths(stateCode, stateNameObj.name, pathString)) {
                     paths.push(path);
                 }
             });

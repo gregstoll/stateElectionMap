@@ -1,5 +1,5 @@
-- state codes on states
-- show state codes in white for dark colored states
+- state codes on states - tidy up on non-cartogram
+- click on state code text should do the same thing as clicking on state
 - play animation
 - rollover points on graph
 - make graph always show +-2
