@@ -129,56 +129,52 @@ class App extends Component<{}, AppState> {
     }
 
     render() {
-        if (!this.state.usTopoJson) {
+        if (!(this.state.usTopoJson && this.state.stateNames && this.state.year)) {
             return <div>Loading</div>;
         }
 
         let stateColors = new Map<string, string>();
         let stateTitles = new Map<string, string>();
-        let nationalDAdvantage = 0;
         let lineChart = undefined;
-        //TODO - just return here, can then move nationalDAdvantage down
-        if (this.state.stateNames && this.state.year) {
-            let electionData = this.state.electionData[this.state.year];
-            nationalDAdvantage = this.getNationalDAdvantage(electionData);
-            let baselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(electionData);
-            for (let i in this.state.stateNames) {
-                let stateCode = this.state.stateNames[i].code;
-                let stateData = electionData.get(stateCode);
-                if (stateData) {
-                    // TODO - duplication or something
-                    let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
-                    stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
-                    stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage));
-                }
+        let electionData = this.state.electionData[this.state.year];
+        let nationalDAdvantage = this.getNationalDAdvantage(electionData);
+        let baselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(electionData);
+        for (let i in this.state.stateNames) {
+            let stateCode = this.state.stateNames[i].code;
+            let stateData = electionData.get(stateCode);
+            if (stateData) {
+                // TODO - duplication or something
+                let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
+                stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
+                stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage));
             }
+        }
 
-            if (this.state.selectedStateCode) {
-                let data = [], zeroes = [];
-                let min = 0, max = 0;
-                for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
-                    let yearElectionData = this.state.electionData[year];
-                    let yearBaselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(yearElectionData);
-                    let stateData = yearElectionData.get(this.state.selectedStateCode);
-                    let y = this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage);
-                    data.push({ x: year, y: y});
-                    zeroes.push({ x: year, y: 0 });
+        if (this.state.selectedStateCode) {
+            let data = [], zeroes = [];
+            let min = 0, max = 0;
+            for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
+                let yearElectionData = this.state.electionData[year];
+                let yearBaselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(yearElectionData);
+                let stateData = yearElectionData.get(this.state.selectedStateCode);
+                let y = this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage);
+                data.push({ x: year, y: y});
+                zeroes.push({ x: year, y: 0 });
 
-                    min = Math.min(min, y);
-                    max = Math.max(max, y);
-                }
-                // TODO optimize this
-                let stateNameObj = _.find(this.state.stateNames, stateNameObj => stateNameObj.code === this.state.selectedStateCode);
-                let yMin = Math.min(-2, min);
-                let yMax = Math.max(2, max);
-                lineChart = <div style={{ width: 600 }}>{stateNameObj.name}
-                    <LineChart width={500} height={300}
-                        margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
-                        data={[data, zeroes]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} lineColors={['green', 'gray']}
-                        yDomainRange={[yMin, yMax]}
-                        xType={'text'} xTicks={data.length - 1} />
-                </div>;
+                min = Math.min(min, y);
+                max = Math.max(max, y);
             }
+            // TODO optimize this
+            let stateNameObj = _.find(this.state.stateNames, stateNameObj => stateNameObj.code === this.state.selectedStateCode);
+            let yMin = Math.min(-2, min);
+            let yMax = Math.max(2, max);
+            lineChart = <div style={{ width: 600 }}>{stateNameObj.name}
+                <LineChart width={500} height={300}
+                    margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
+                    data={[data, zeroes]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} lineColors={['green', 'gray']}
+                    yDomainRange={[yMin, yMax]}
+                    xType={'text'} xTicks={data.length - 1} />
+            </div>;
         }
 
         // https://react-component.github.io/slider/examples/slider.html
