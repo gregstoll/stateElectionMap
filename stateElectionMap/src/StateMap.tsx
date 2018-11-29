@@ -66,7 +66,6 @@ export class StateMap extends Component<StateMapProps, {}> {
         parts.push(<path name={stateCode} d={path} style={{ fill: color }} key={stateCode} onClick={this.stateClick}>
             <title>{title}</title>
         </path>);
-        // TODO - goes behind state boundaries (see NM)
         parts.push(<text name={stateCode} x={center[0][0]} y={center[0][1]} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
         return parts;
     };
@@ -145,6 +144,18 @@ export class StateMap extends Component<StateMapProps, {}> {
                 }
             });
         }
+        // Make text elements go to the end so they draw on top
+        paths.sort((a, b) => {
+            let aIsText = a.type == 'text';
+            let bIsText = b.type == 'text';
+            if (aIsText && !bIsText) {
+                return 1;
+            }
+            if (!aIsText && bIsText) {
+                return -1;
+            }
+            return 0;
+        });
         return <g transform={`translate(${this.props.x}, ${this.props.y})`}>
             {paths}
         </g>;
