@@ -67,8 +67,8 @@ export class StateMap extends Component<StateMapProps, {}> {
             <title>{title}</title>
         </path>);
         // TODO - goes behind state boundaries (see NM)
-            parts.push(<text x={center[0][0]} y={center[0][1]} dy="0.25em" stroke={this.getLabelColor(color)}>{stateCode}</text>);
-            return parts;
+        parts.push(<text name={stateCode} x={center[0][0]} y={center[0][1]} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
+        return parts;
     };
 
     getLabelColor(backgroundColor: string): string {
