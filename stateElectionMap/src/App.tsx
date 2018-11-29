@@ -24,7 +24,7 @@ interface AppState {
 }
 
 class App extends Component<{}, AppState> {
-    state : AppState = {
+    state: AppState = {
         year: 0,
         selectedStateCode: undefined,
         isCartogram: true,
@@ -41,7 +41,7 @@ class App extends Component<{}, AppState> {
 
     async loadDataAsync() {
         let data: DataCollection = await loadAllData();
-        let yearState = {year: parseInt(_.max(Object.keys(data.electionData)), 10)};
+        let yearState = { year: parseInt(_.max(Object.keys(data.electionData)), 10) };
         this.setState(Object.assign(yearState, data));
     }
 
@@ -54,7 +54,7 @@ class App extends Component<{}, AppState> {
         // http://colorbrewer2.org/?type=diverging&scheme=RdBu&n=11
         const _colors =
             ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'];
-        
+
         let dAdvantage = ((dVote - rVote) * 100.0) / totalVote;
         // 5 red, 5 blue (don't use middle one)
         const increment = 3;
@@ -108,9 +108,9 @@ class App extends Component<{}, AppState> {
         //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
         let a = Array.from(electionData.entries());
         for (let [key, value] of a) {
-        //for (let entry of Array.from(electionData.entries())) {
-        //TODO ugh this is so gross
-        //for (let i = 0; i < values.length; ++i) {
+            //for (let entry of Array.from(electionData.entries())) {
+            //TODO ugh this is so gross
+            //for (let i = 0; i < values.length; ++i) {
             //const value = values[i];
             //let value = electionData[key];
             dTotal += value.dCount;
@@ -129,11 +129,11 @@ class App extends Component<{}, AppState> {
     }
 
     render() {
-      if (!this.state.usTopoJson) {
-          return <div>Loading</div>;
-      }
+        if (!this.state.usTopoJson) {
+            return <div>Loading</div>;
+        }
 
-    let stateColors = new Map<string, string>();
+        let stateColors = new Map<string, string>();
         let stateTitles = new Map<string, string>();
         let nationalDAdvantage = 0;
         let lineChart = undefined;
@@ -169,45 +169,45 @@ class App extends Component<{}, AppState> {
                         margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
                         data={[data, zeroes]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} lineColors={['green', 'gray']}
                         xType={'text'} xTicks={data.length - 1} />
-                    </div>;
+                </div>;
             }
         }
 
         // https://react-component.github.io/slider/examples/slider.html
-      return (
-          <div className="App">
-            <svg width="1100" height="500">
-                  <StateMap usTopoJson={this.state.usTopoJson}
-                          cartogram={this.state.cartogram}
-                          isCartogram={this.state.isCartogram}
-                          stateNames={this.state.stateNames}
-                          stateColors={stateColors}
-                          stateTitles={stateTitles}
-                          stateSelectedCallback={this.onStateSelected}
-                          x={0}
-                          y={0}
-                          width={500}
-                          height={500}/>
-              </svg>
-              <div>
-                  <Button.Group>
-                      <Button active={this.state.rawResults} onClick={() => this.setState({ rawResults: true })}>Actual results</Button>
-                      <Button active={!this.state.rawResults} onClick={() => this.setState({ rawResults: false })}>Relative to popular vote</Button>
-                  </Button.Group>
-                  <Button.Group>
-                      <Button active={!this.state.isCartogram} onClick={() => this.setState({ isCartogram: false })}>Normal</Button>
-                      <Button active={this.state.isCartogram} onClick={() => this.setState({ isCartogram: true })}>Cartogram</Button>
-                  </Button.Group>
-              </div>
-              <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
-              {lineChart}
-            <div style={{width: 500}}>
-                <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange}/>
-            </div>
+        return (
+            <div className="App">
+                <svg width="1100" height="500">
+                    <StateMap usTopoJson={this.state.usTopoJson}
+                        cartogram={this.state.cartogram}
+                        isCartogram={this.state.isCartogram}
+                        stateNames={this.state.stateNames}
+                        stateColors={stateColors}
+                        stateTitles={stateTitles}
+                        stateSelectedCallback={this.onStateSelected}
+                        x={0}
+                        y={0}
+                        width={500}
+                        height={500} />
+                </svg>
+                <div>
+                    <Button.Group>
+                        <Button active={this.state.rawResults} onClick={() => this.setState({ rawResults: true })}>Actual results</Button>
+                        <Button active={!this.state.rawResults} onClick={() => this.setState({ rawResults: false })}>Relative to popular vote</Button>
+                    </Button.Group>
+                    <Button.Group>
+                        <Button active={!this.state.isCartogram} onClick={() => this.setState({ isCartogram: false })}>Normal</Button>
+                        <Button active={this.state.isCartogram} onClick={() => this.setState({ isCartogram: true })}>Cartogram</Button>
+                    </Button.Group>
+                </div>
+                <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
+                {lineChart}
+                <div style={{ width: 500 }}>
+                    <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange} />
+                </div>
 
-          </div>
-      );
-  }
+            </div>
+        );
+    }
 }
 
 export default App;

@@ -7,7 +7,7 @@ export interface StateName {
     name: string
 };
 
-const cleanStateName = (d : any) : StateName => ({
+const cleanStateName = (d: any): StateName => ({
     code: d.code,
     id: Number(d.id),
     name: d.name
@@ -52,7 +52,7 @@ const getCartogramAsync = async (): Promise<d3.Selection<HTMLElement, () => any,
     return d3.select(xml.documentElement);
 };
 
-export const loadAllData = async () : Promise<DataCollection> => {
+export const loadAllData = async (): Promise<DataCollection> => {
     //TODO error handling
     let usPromise = d3.json('data/us.json');
     let stateNamesPromise = d3.tsv('data/us-state-names.tsv', cleanStateName);

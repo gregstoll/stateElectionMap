@@ -73,7 +73,7 @@ export class StateMap extends Component<StateMapProps, {}> {
 
     getLabelColor(backgroundColor: string): string {
         let backgroundParsedColor = parse(backgroundColor);
-        let hsl : number[] = backgroundParsedColor.hsl;
+        let hsl: number[] = backgroundParsedColor.hsl;
         if (isNullOrUndefined(hsl)) {
             return "#222";
         }
@@ -85,7 +85,7 @@ export class StateMap extends Component<StateMapProps, {}> {
         }
     }
 
-    getCenters(stateCode : string, shapes: Array<Array<[number, number]>>) {
+    getCenters(stateCode: string, shapes: Array<Array<[number, number]>>) {
         return shapes.map(function (shape: Array<[number, number]>) {
             if (shape.length > 1 || (stateCode === "AK" || stateCode === "HI")) {
                 //TODO look at AK and a bunch of others in normal mode
@@ -103,9 +103,9 @@ export class StateMap extends Component<StateMapProps, {}> {
     }
 
     parsePath(str: string): Array<Array<[number, number]>> {
-        var polys = str.replace(/^M|Z$/g, "").split("ZM").map(function (poly : string) {
-            return poly.split("L").map(function (pair : string) {
-                return pair.split(",").map(function (point : string) {
+        var polys = str.replace(/^M|Z$/g, "").split("ZM").map(function (poly: string) {
+            return poly.split("L").map(function (pair: string) {
+                return pair.split(",").map(function (point: string) {
                     return parseFloat(point);
                 });
             });
@@ -116,7 +116,7 @@ export class StateMap extends Component<StateMapProps, {}> {
     render() {
         // https://d3-geomap.github.io/map/choropleth/us-states/
         //const map = d3.geomap.choropleth().geofile('/d3-geomap/topojson/countries/USA.json').projection(this.projection);
-        let paths: JSX.Element[]  = [];
+        let paths: JSX.Element[] = [];
         if (!this.props.isCartogram) {
             const us = this.props.usTopoJson;
             const geometries = us.objects.states.geometries;
@@ -134,7 +134,7 @@ export class StateMap extends Component<StateMapProps, {}> {
         else {
             // good glaven, thought JS was done with this tomfoolery
             let that = this;
-            let svgPaths = this.props.cartogram.selectAll("path").each(function() {
+            let svgPaths = this.props.cartogram.selectAll("path").each(function () {
                 let thisPath = this as SVGPathElement;
                 let stateCode = thisPath.getAttribute("id");
                 // TODO optimize this
@@ -147,6 +147,6 @@ export class StateMap extends Component<StateMapProps, {}> {
         }
         return <g transform={`translate(${this.props.x}, ${this.props.y})`}>
             {paths}
-            </g>;
+        </g>;
     }
 }
