@@ -84,6 +84,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
         let data: ElectionStateResult[] = await electionDataPromises[year];
         let electionYearData: ElectionYearData = {
+            stateResults: new Map<string, ElectionStateResult>(),
             nationalDAdvantage: undefined
         };
         data.forEach(stateResult => {
