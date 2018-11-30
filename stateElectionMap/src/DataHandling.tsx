@@ -1,6 +1,8 @@
 import * as d3 from 'd3';
 import _ from 'lodash';
 
+const VALIDATE_DATA = false;
+
 export interface StateName {
     code: string,
     id: number,
@@ -52,6 +54,20 @@ const getCartogramAsync = async (): Promise<d3.Selection<HTMLElement, () => any,
     return d3.select(xml.documentElement);
 };
 
+function validateData(year: number, stateData: ElectionStateResult): void {
+    if (stateData.dCount + stateData.rCount > stateData.totalCount) {
+        alert(`total is too low: ${year} ${stateData.stateCode}`);
+    }
+    if (stateData.dCount > 10 * stateData.rCount) {
+        if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {
+            alert(`too many d's: ${year} ${stateData.stateCode}`);
+        }
+    }
+    if (stateData.rCount > 10 * stateData.dCount) {
+        alert(`too many r's: ${year} ${stateData.stateCode}`);
+    }
+}
+
 export const loadAllData = async (): Promise<DataCollection> => {
     //TODO error handling
     let usPromise = d3.json('data/us.json');
@@ -66,6 +82,9 @@ export const loadAllData = async (): Promise<DataCollection> => {
         let data: ElectionStateResult[] = await electionDataPromises[year];
         electionData[year] = new Map<string, ElectionStateResult>();
         data.forEach(stateResult => {
+            if (VALIDATE_DATA) {
+                validateData(year, stateResult);
+            }
             electionData[year].set(stateResult.stateCode, stateResult);
         });
     }
