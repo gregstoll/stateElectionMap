@@ -6,7 +6,7 @@ import * as topojson from 'topojson'
 import polylabel from 'polylabel';
 import { isNullOrUndefined } from 'util';
 //TODO - namespace this, sheesh
-import parse from 'parse-color';
+import parseColor from 'parse-color';
 
 import './StateMap.css';
 
@@ -71,7 +71,7 @@ export class StateMap extends Component<StateMapProps, {}> {
     };
 
     getLabelColor(backgroundColor: string): string {
-        let backgroundParsedColor = parse(backgroundColor);
+        let backgroundParsedColor = parseColor(backgroundColor);
         let hsl: number[] = backgroundParsedColor.hsl;
         if (isNullOrUndefined(hsl)) {
             return "#222";
