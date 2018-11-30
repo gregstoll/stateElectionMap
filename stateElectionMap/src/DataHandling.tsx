@@ -31,7 +31,7 @@ const cleanElectionResults = (d: any): ElectionStateResult => {
     };
 };
 
-export const MIN_YEAR = 1992;
+export const MIN_YEAR = 1988;
 export const MAX_YEAR = 2016;
 export const YEAR_STEP = 4;
 
