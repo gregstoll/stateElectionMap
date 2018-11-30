@@ -37,9 +37,12 @@ export const MIN_YEAR = 1988;
 export const MAX_YEAR = 2016;
 export const YEAR_STEP = 4;
 
-export interface ElectionData {
-    [year: number]: Map<string, ElectionStateResult>
-};
+export type ElectionData = Map<number, ElectionYearData>;
+
+export interface ElectionYearData {
+    stateResults: Map<string, ElectionStateResult>,
+    nationalDAdvantage: number
+}
 
 export interface DataCollection {
     usTopoJson: any,
@@ -77,16 +80,20 @@ export const loadAllData = async (): Promise<DataCollection> => {
         electionDataPromises[year] = d3.csv('data/electionResults/' + year + '.csv', cleanElectionResults);
     }
     let cartogramPromise = getCartogramAsync();
-    let electionData = {};
+    let electionData = new Map<number, ElectionYearData>();
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
         let data: ElectionStateResult[] = await electionDataPromises[year];
-        electionData[year] = new Map<string, ElectionStateResult>();
+        let electionYearData: ElectionYearData = {
+            nationalDAdvantage: undefined
+        };
         data.forEach(stateResult => {
             if (VALIDATE_DATA) {
                 validateData(year, stateResult);
             }
-            electionData[year].set(stateResult.stateCode, stateResult);
+            electionYearData.stateResults.set(stateResult.stateCode, stateResult);
         });
+        setNationalDAdvantage(electionYearData);
+        electionData.set(year, electionYearData);
     }
     let us = await usPromise;
     let stateNames = await stateNamesPromise;
@@ -98,3 +105,24 @@ export const loadAllData = async (): Promise<DataCollection> => {
         electionData: electionData
     };
 };
+
+function setNationalDAdvantage(electionYearData: ElectionYearData) {
+    let dTotal = 0, rTotal = 0, allTotal = 0;
+    //for (const Array.from(electionData.values()).forEach(value => {
+    //for (const value of Array.from(electionData.values())) {
+    //const values: any = electionData.values();
+    //for (let [key, value] of Array.from(electionData)) {
+    //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
+    let a = Array.from(electionYearData.stateResults.entries());
+    for (let [key, value] of a) {
+        //for (let entry of Array.from(electionData.entries())) {
+        //TODO ugh this is so gross
+        //for (let i = 0; i < values.length; ++i) {
+        //const value = values[i];
+        //let value = electionData[key];
+        dTotal += value.dCount;
+        rTotal += value.rCount;
+        allTotal += value.totalCount;
+    }
+    electionYearData.nationalDAdvantage = ((dTotal - rTotal) * 100.0) / allTotal;
+}

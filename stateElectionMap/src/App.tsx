@@ -41,7 +41,7 @@ class App extends Component<{}, AppState> {
 
     async loadDataAsync() {
         let data: DataCollection = await loadAllData();
-        let yearState = { year: parseInt(_.max(Object.keys(data.electionData)), 10) };
+        let yearState = { year: _.max(Array.from(data.electionData.keys())) };
         this.setState(Object.assign(yearState, data));
     }
 
@@ -99,28 +99,6 @@ class App extends Component<{}, AppState> {
         return "Even";
     }
 
-    //TODO - precalculate this when fetch data
-    private getNationalDAdvantage(electionData: Map<string, ElectionStateResult>) {
-        let dTotal = 0, rTotal = 0, allTotal = 0;
-        //for (const Array.from(electionData.values()).forEach(value => {
-        //for (const value of Array.from(electionData.values())) {
-        //const values: any = electionData.values();
-        //for (let [key, value] of Array.from(electionData)) {
-        //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
-        let a = Array.from(electionData.entries());
-        for (let [key, value] of a) {
-            //for (let entry of Array.from(electionData.entries())) {
-            //TODO ugh this is so gross
-            //for (let i = 0; i < values.length; ++i) {
-            //const value = values[i];
-            //let value = electionData[key];
-            dTotal += value.dCount;
-            rTotal += value.rCount;
-            allTotal += value.totalCount;
-        }
-        return ((dTotal - rTotal) * 100.0) / allTotal;
-    }
-
     onSliderChange = (value) => {
         this.setState({ year: value });
     }
@@ -137,12 +115,12 @@ class App extends Component<{}, AppState> {
         let stateColors = new Map<string, string>();
         let stateTitles = new Map<string, string>();
         let lineChart = undefined;
-        let electionData = this.state.electionData[this.state.year];
-        let nationalDAdvantage = this.getNationalDAdvantage(electionData);
-        let baselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(electionData);
+        let electionData = this.state.electionData.get(this.state.year);
+        let nationalDAdvantage = electionData.nationalDAdvantage;
+        let baselineDAdvantage = this.state.rawResults ? 0 : electionData.nationalDAdvantage;
         for (let i in this.state.stateNames) {
             let stateCode = this.state.stateNames[i].code;
-            let stateData = electionData.get(stateCode);
+            let stateData = electionData.stateResults.get(stateCode);
             if (stateData) {
                 // TODO - duplication or something
                 let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
@@ -155,9 +133,9 @@ class App extends Component<{}, AppState> {
             let data = [], zeroes = [];
             let min = 0, max = 0;
             for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
-                let yearElectionData = this.state.electionData[year];
-                let yearBaselineDAdvantage = this.state.rawResults ? 0 : this.getNationalDAdvantage(yearElectionData);
-                let stateData = yearElectionData.get(this.state.selectedStateCode);
+                let yearElectionData = this.state.electionData.get(year);
+                let yearBaselineDAdvantage = this.state.rawResults ? 0 : yearElectionData.nationalDAdvantage;
+                let stateData = yearElectionData.stateResults.get(this.state.selectedStateCode);
                 let y = this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage);
                 data.push({ x: year, y: y});
                 zeroes.push({ x: year, y: 0 });
