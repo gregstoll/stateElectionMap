@@ -59,14 +59,14 @@ export class StateMap extends Component<StateMapProps, {}> {
         let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
         let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
         let parsedPath = this.parsePath(path);
-        let center = this.getCenters(stateCode, parsedPath);
+        let center = this.getCenter(parsedPath);
         // TODO - don't show if not present
         let title = `${stateName}: ${titleExtra}`;
         let parts = [];
         parts.push(<path name={stateCode} d={path} style={{ fill: color }} key={stateCode} onClick={this.stateClick}>
             <title>{title}</title>
         </path>);
-        parts.push(<text name={stateCode} x={center[0][0]} y={center[0][1]} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
+        parts.push(<text name={stateCode} x={center[0]} y={center[1]} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
         return parts;
     };
 
@@ -84,21 +84,8 @@ export class StateMap extends Component<StateMapProps, {}> {
         }
     }
 
-    getCenters(stateCode: string, shapes: Array<Array<[number, number]>>) {
-        return shapes.map(function (shape: Array<[number, number]>) {
-            if (shape.length > 1 || (stateCode === "AK" || stateCode === "HI")) {
-                //TODO look at AK and a bunch of others in normal mode
-                //TODO is this right?
-                //flattened = shape.reduce(function (prev, ring) {
-                //    return prev.concat(ring);
-                //}, []);
-                //let hull = d3.polygonHull(flattened);
-                let hull = d3.polygonHull(shape);
-                return polylabel([hull]);
-            }
-
-            return polylabel([shape]);
-        });
+    getCenter(shapes: Array<Array<[number, number]>>) {
+        return polylabel([shapes[0]]);
     }
 
     parsePath(str: string): Array<Array<[number, number]>> {
