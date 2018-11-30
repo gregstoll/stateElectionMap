@@ -205,10 +205,10 @@ class App extends Component<{}, AppState> {
                     </Button.Group>
                 </div>
                 <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
-                {lineChart}
                 <div style={{ width: 500 }}>
                     <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange} />
                 </div>
+                {lineChart}
 
             </div>
         );
