@@ -33,7 +33,7 @@ const cleanElectionResults = (d: any): ElectionStateResult => {
     };
 };
 
-export const MIN_YEAR = 1988;
+export const MIN_YEAR = 1984;
 export const MAX_YEAR = 2016;
 export const YEAR_STEP = 4;
 
@@ -60,6 +60,9 @@ const getCartogramAsync = async (): Promise<d3.Selection<HTMLElement, () => any,
 function validateData(year: number, stateData: ElectionStateResult): void {
     if (stateData.dCount + stateData.rCount > stateData.totalCount) {
         alert(`total is too low: ${year} ${stateData.stateCode}`);
+    }
+    if ((stateData.rCount + stateData.dCount) * 2 < stateData.totalCount) {
+        alert(`too many third-party votes ${year} ${stateData.stateCode}`);
     }
     if (stateData.dCount > 10 * stateData.rCount) {
         if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {
