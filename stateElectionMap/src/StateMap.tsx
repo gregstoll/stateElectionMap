@@ -66,7 +66,7 @@ export class StateMap extends Component<StateMapProps, {}> {
         parts.push(<path name={stateCode} d={path} style={{ fill: color }} key={stateCode} onClick={this.stateClick}>
             <title>{title}</title>
         </path>);
-        parts.push(<text name={stateCode} x={center[0]} y={center[1]} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
+        parts.push(<text name={stateCode} x={center[0]} y={center[1]} key={stateCode + "text"} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
         return parts;
     };
 
@@ -84,15 +84,24 @@ export class StateMap extends Component<StateMapProps, {}> {
         }
     }
 
-    getCenter(shapes: Array<Array<[number, number]>>) {
-        return polylabel([shapes[0]]);
+    getCenter(shapes: Array<Array<[number, number]>>): [number, number] {
+        if (this.props.isCartogram) {
+            return polylabel([shapes[0]]) as [number, number];
+        }
+        else {
+            // Very rough heuristic to find the "main" path
+            // could look at bounding box instead
+            let maxIndex: number = _.maxBy(_.range(0, shapes.length), index => shapes[index].length);
+            return polylabel([shapes[maxIndex]]) as [number, number];
+        }
     }
 
     parsePath(str: string): Array<Array<[number, number]>> {
         var polys = str.replace(/^M|Z$/g, "").split("ZM").map(function (poly: string) {
             return poly.split("L").map(function (pair: string) {
-                return pair.split(",").map(function (point: string) {
-                    return parseFloat(point);
+                // in Edge these are space-delimited??
+                return pair.trim().replace(" ", ",").split(",").map(function (xOrY: string) {
+                    return parseFloat(xOrY);
                 });
             });
         });
