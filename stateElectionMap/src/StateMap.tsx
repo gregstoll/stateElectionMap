@@ -23,28 +23,46 @@ interface StateMapProps {
     y: number,
     width: number,
     height: number
-}
+};
+
+interface StateLineInfo {
+    lineStart: [number, number],
+    lineEnd: [number, number],
+    lineTextPosition: [number, number]
+};
 
 export class StateMap extends Component<StateMapProps, {}> {
     projection: d3.GeoProjection;
     geoPath: d3.GeoPath;
-    quantize: d3.ScaleQuantize<Number>;
+    stateLines: Map<string, StateLineInfo>;
 
     constructor(props) {
         super(props);
 
         this.projection = d3.geoAlbersUsa().scale(1280);
         this.geoPath = d3.geoPath().projection(this.projection);
-        this.quantize = d3.scaleQuantize().range(d3.range(9));
 
         this.updateD3(props);
+        this.initStateLines();
+    }
+
+    initStateLines() {
+        this.stateLines = new Map<string, StateLineInfo>();
+        this.stateLines.set('NH', { lineStart: [384, 155], lineEnd: [407, 187], lineTextPosition: [385, 150] });
     }
 
     updateD3(props) {
-        this.projection
-            .translate([props.width / 2, props.height / 2])
-            .scale(props.width * 1.3);
-        //TODO
+        // TODO this does something because taking it out makes the non-cartogram look bad
+        if (this.props.isCartogram) {
+            this.projection
+                .translate([props.width / 2, props.height / 2])
+                .scale(props.width * 1.0);
+        }
+        else {
+            this.projection
+                .translate([props.width / 2, props.height / 2])
+                .scale(props.width * 1.3);
+        }
     }
 
     stateClick = event => {
@@ -56,17 +74,26 @@ export class StateMap extends Component<StateMapProps, {}> {
         if (isNullOrUndefined(path)) {
             return [];
         }
-        let color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
-        let titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
-        let parsedPath = this.parsePath(path);
-        let center = this.getCenter(parsedPath);
-        // TODO - don't show if not present
-        let title = `${stateName}: ${titleExtra}`;
+        const color = (this.props.stateColors && this.props.stateColors.get(stateCode)) || 'rgb(240, 240, 240)';
+        const titleExtra = this.props.stateTitles && this.props.stateTitles.get(stateCode);
+        const parsedPath = this.parsePath(path);
+        const title = isNullOrUndefined(titleExtra) ? stateName : `${stateName}: ${titleExtra}`;
+        let textPosition: [number, number];
         let parts = [];
+        if (this.stateLines.has(stateCode)) {
+            const stateLineInfo = this.stateLines.get(stateCode);
+            textPosition = stateLineInfo.lineTextPosition;
+            const linePath = `M ${stateLineInfo.lineStart[0]},${stateLineInfo.lineStart[1]} L ${stateLineInfo.lineEnd[0]},${stateLineInfo.lineEnd[1]} Z`;
+            parts.push(<path key={stateCode + "line"} name={stateCode + "line"} d={linePath} />);
+        }
+        else {
+            textPosition = this.getCenter(parsedPath);
+        }
         parts.push(<path name={stateCode} d={path} style={{ fill: color }} key={stateCode} onClick={this.stateClick}>
             <title>{title}</title>
         </path>);
-        parts.push(<text name={stateCode} x={center[0]} y={center[1]} key={stateCode + "text"} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
+        //TODO background color on text?
+        parts.push(<text name={stateCode} x={textPosition[0]} y={textPosition[1]} key={stateCode + "text"} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
         return parts;
     };
 
@@ -112,8 +139,11 @@ export class StateMap extends Component<StateMapProps, {}> {
         // https://d3-geomap.github.io/map/choropleth/us-states/
         //const map = d3.geomap.choropleth().geofile('/d3-geomap/topojson/countries/USA.json').projection(this.projection);
         let paths: JSX.Element[] = [];
+        let scale = 1, xOffset = 0, yOffset = 0;
         if (!this.props.isCartogram) {
             const us = this.props.usTopoJson;
+            scale = 1.75;
+            yOffset = -50 * scale;
             const geometries = us.objects.states.geometries;
             for (let i = 0; i < geometries.length; ++i) {
                 let topoState = geometries[i];
@@ -141,18 +171,40 @@ export class StateMap extends Component<StateMapProps, {}> {
             });
         }
         // Make text elements go to the end so they draw on top
-        paths.sort((a, b) => {
-            let aIsText = a.type == 'text';
-            let bIsText = b.type == 'text';
-            if (aIsText && !bIsText) {
+        // first normal paths, then lines (pointing to text), then text
+        let getPathValue = (x: JSX.Element): number => {
+            if (x.type == 'text') {
+                return 0;
+            }
+            // must be a path
+            let name = x.props.name;
+            if (name.endsWith("line")) {
                 return 1;
             }
-            if (!aIsText && bIsText) {
+            return 2;
+        }
+        paths.sort((a, b) => {
+            // first normal paths, then lines (pointing to text), then text
+            let aValue = getPathValue(a);
+            let bValue = getPathValue(b);
+            if (aValue > bValue) {
                 return -1;
             }
+            if (aValue < bValue) {
+                return 1;
+            }
             return 0;
+            //let aIsText = a.type == 'text';
+            //let bIsText = b.type == 'text';
+            //if (aIsText && !bIsText) {
+            //    return 1;
+            //}
+            //if (!aIsText && bIsText) {
+            //    return -1;
+            //}
+            //return 0;
         });
-        return <g transform={`translate(${this.props.x}, ${this.props.y})`}>
+        return <g transform={`scale(${scale} ${scale}) translate(${this.props.x + xOffset}, ${this.props.y + yOffset})`}>
             {paths}
         </g>;
     }
