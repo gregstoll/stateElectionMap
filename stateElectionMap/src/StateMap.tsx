@@ -34,7 +34,7 @@ interface StateLineInfo {
 export class StateMap extends Component<StateMapProps, {}> {
     projection: d3.GeoProjection;
     geoPath: d3.GeoPath;
-    stateLines: Map<string, StateLineInfo>;
+    labelLines: Map<string, StateLineInfo>;
 
     constructor(props) {
         super(props);
@@ -43,12 +43,12 @@ export class StateMap extends Component<StateMapProps, {}> {
         this.geoPath = d3.geoPath().projection(this.projection);
 
         this.updateD3(props);
-        this.initStateLines();
+        this.initLabelLines();
     }
 
-    initStateLines() {
-        this.stateLines = new Map<string, StateLineInfo>();
-        this.stateLines.set('NH', { lineStart: [384, 155], lineEnd: [407, 187], lineTextPosition: [385, 150] });
+    initLabelLines() {
+        this.labelLines = new Map<string, StateLineInfo>();
+        this.labelLines.set('NH', { lineStart: [384, 155], lineEnd: [407, 187], lineTextPosition: [385, 150] });
     }
 
     updateD3(props) {
@@ -80,10 +80,11 @@ export class StateMap extends Component<StateMapProps, {}> {
         const title = isNullOrUndefined(titleExtra) ? stateName : `${stateName}: ${titleExtra}`;
         let textPosition: [number, number];
         let parts = [];
-        if (this.stateLines.has(stateCode)) {
-            const stateLineInfo = this.stateLines.get(stateCode);
-            textPosition = stateLineInfo.lineTextPosition;
-            const linePath = `M ${stateLineInfo.lineStart[0]},${stateLineInfo.lineStart[1]} L ${stateLineInfo.lineEnd[0]},${stateLineInfo.lineEnd[1]} Z`;
+        // only use labelLines in non-cartogram mode - state codes fit inside all the states in cartogram mode
+        if (!this.props.isCartogram && this.labelLines.has(stateCode)) {
+            const labelLineInfo = this.labelLines.get(stateCode);
+            textPosition = labelLineInfo.lineTextPosition;
+            const linePath = `M ${labelLineInfo.lineStart[0]},${labelLineInfo.lineStart[1]} L ${labelLineInfo.lineEnd[0]},${labelLineInfo.lineEnd[1]} Z`;
             parts.push(<path key={stateCode + "line"} name={stateCode + "line"} d={linePath} />);
         }
         else {
