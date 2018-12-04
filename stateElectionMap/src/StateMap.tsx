@@ -48,21 +48,14 @@ export class StateMap extends Component<StateMapProps, {}> {
 
     initLabelLines() {
         this.labelLines = new Map<string, StateLineInfo>();
-        this.labelLines.set('NH', { lineStart: [384, 155], lineEnd: [407, 187], lineTextPosition: [385, 150] });
+        this.labelLines.set('NH', { lineStart: [389, 155], lineEnd: [407, 187], lineTextPosition: [390, 150] });
+        this.labelLines.set('VT', { lineStart: [371, 155], lineEnd: [400, 183], lineTextPosition: [372, 150] });
     }
 
     updateD3(props) {
-        // TODO this does something because taking it out makes the non-cartogram look bad
-        if (this.props.isCartogram) {
-            this.projection
-                .translate([props.width / 2, props.height / 2])
-                .scale(props.width * 1.0);
-        }
-        else {
-            this.projection
-                .translate([props.width / 2, props.height / 2])
-                .scale(props.width * 1.3);
-        }
+        this.projection
+            .translate([props.width / 2, props.height / 2])
+            .scale(props.width * 1.0);
     }
 
     stateClick = event => {
@@ -70,7 +63,7 @@ export class StateMap extends Component<StateMapProps, {}> {
         this.props.stateSelectedCallback(stateCode);
     };
 
-    getSVGPaths = (stateCode: string, stateName: string, path: string): Array<JSX.Element> => {
+    getSVGPaths = (stateCode: string, stateName: string, path: string, backgroundColors: Set<string>): Array<JSX.Element> => {
         if (isNullOrUndefined(path)) {
             return [];
         }
@@ -80,15 +73,20 @@ export class StateMap extends Component<StateMapProps, {}> {
         const title = isNullOrUndefined(titleExtra) ? stateName : `${stateName}: ${titleExtra}`;
         let textPosition: [number, number];
         let parts = [];
+        let filterText = "";
         // only use labelLines in non-cartogram mode - state codes fit inside all the states in cartogram mode
         if (!this.props.isCartogram && this.labelLines.has(stateCode)) {
             const labelLineInfo = this.labelLines.get(stateCode);
             textPosition = labelLineInfo.lineTextPosition;
             const linePath = `M ${labelLineInfo.lineStart[0]},${labelLineInfo.lineStart[1]} L ${labelLineInfo.lineEnd[0]},${labelLineInfo.lineEnd[1]} Z`;
             parts.push(<path key={stateCode + "line"} name={stateCode + "line"} d={linePath} />);
-            //TODO make this a style
-            parts.push(<text key={stateCode + "textBackground"} name={stateCode + "textBackground"}
-                x={textPosition[0]} y={textPosition[1]} dy="0.25em" style={{ stroke: color, strokeWidth: "0.3em" }}>{stateCode}</text>);
+            backgroundColors.add(color);
+            let filterName = this.filterNameFromColor(color);
+            filterText = `url(#${filterName})`;
+            //parts.push(<text key={stateCode + "textBackground"} name={stateCode + "textBackground"} className="textBackground"
+            //    x={textPosition[0]} y={textPosition[1]} dy="0.25em"
+            //    style={{ stroke: color }}>{stateCode}</text>);
+                //style={{ backgroundColor: color }}>{stateCode}</text>);
         }
         else {
             textPosition = this.getCenter(parsedPath);
@@ -96,10 +94,15 @@ export class StateMap extends Component<StateMapProps, {}> {
         parts.push(<path name={stateCode} d={path} style={{ fill: color }} key={stateCode} onClick={this.stateClick}>
             <title>{title}</title>
         </path>);
-        //TODO background color on text?
-        parts.push(<text name={stateCode} x={textPosition[0]} y={textPosition[1]} key={stateCode + "text"} dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)}>{stateCode}</text>);
+        parts.push(<text name={stateCode} x={textPosition[0]} y={textPosition[1]} key={stateCode + "text"}
+            dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)} filter={filterText}>{stateCode}</text>);
         return parts;
     };
+
+    filterNameFromColor(color: string): string {
+        let parsedColor = parseColor(color);
+        return "color" + (parsedColor.hex as string).substr(1);
+    }
 
     getLabelColor(backgroundColor: string): string {
         let backgroundParsedColor = parseColor(backgroundColor);
@@ -143,6 +146,7 @@ export class StateMap extends Component<StateMapProps, {}> {
         // https://d3-geomap.github.io/map/choropleth/us-states/
         //const map = d3.geomap.choropleth().geofile('/d3-geomap/topojson/countries/USA.json').projection(this.projection);
         let paths: JSX.Element[] = [];
+        let backgroundColors = new Set<string>();
         let scale = 1, xOffset = 0, yOffset = 0;
         if (!this.props.isCartogram) {
             const us = this.props.usTopoJson;
@@ -155,13 +159,12 @@ export class StateMap extends Component<StateMapProps, {}> {
                 // TODO optimize this
                 let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
                 let stateCode = stateNameObj.code;
-                for (let path of this.getSVGPaths(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState)))) {
+                for (let path of this.getSVGPaths(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState)), backgroundColors)) {
                     paths.push(path);
                 }
             }
         }
         else {
-            // good glaven, thought JS was done with this tomfoolery
             let that = this;
             let svgPaths = this.props.cartogram.selectAll("path").each(function () {
                 let thisPath = this as SVGPathElement;
@@ -169,7 +172,7 @@ export class StateMap extends Component<StateMapProps, {}> {
                 // TODO optimize this
                 let stateNameObj = _.find(that.props.stateNames, stateNameObj => stateNameObj.code === stateCode);
                 let pathString = thisPath.getAttribute("d");
-                for (let path of that.getSVGPaths(stateCode, stateNameObj.name, pathString)) {
+                for (let path of that.getSVGPaths(stateCode, stateNameObj.name, pathString, backgroundColors)) {
                     paths.push(path);
                 }
             });
@@ -201,7 +204,18 @@ export class StateMap extends Component<StateMapProps, {}> {
             }
             return 0;
         });
+        let filters: JSX.Element[] = [];
+        for (let color of Array.from(backgroundColors.values())) {
+            let filterName = this.filterNameFromColor(color);
+            filters.push(<filter x="0" y="0" width="1" height="1" id={filterName} key={filterName}>
+                <feFlood floodColor={color} />
+                <feComposite in="SourceGraphic" />
+            </filter>);
+        }
         return <g transform={`scale(${scale} ${scale}) translate(${this.props.x + xOffset}, ${this.props.y + yOffset})`}>
+            <defs>
+                {filters}
+            </defs>
             {paths}
         </g>;
     }

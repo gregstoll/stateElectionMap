@@ -9,6 +9,10 @@ text {
     font-weight: 500;
 }
 
+.textBackground {
+   stroke-width: 0.3em;
+}
+
 g text {
     text-anchor: middle;
     font-size: 10px;
