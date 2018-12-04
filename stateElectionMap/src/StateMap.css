@@ -1,10 +1,10 @@
 path {
-    stroke-width: 2px;
+    stroke-width: 1px;
     stroke: gray;
 }
 
 .labelLine {
-    stroke-width: 1px;
+    stroke-width: 1.5px;
 }
 
 text {
