@@ -49,7 +49,11 @@ export class StateMap extends Component<StateMapProps, {}> {
     initLabelLines() {
         this.labelLines = new Map<string, StateLineInfo>();
         this.labelLines.set('NH', { lineStart: [389, 155], lineEnd: [407, 187], lineTextPosition: [390, 150] });
-        this.labelLines.set('VT', { lineStart: [371, 155], lineEnd: [400, 183], lineTextPosition: [372, 150] });
+        this.labelLines.set('VT', { lineStart: [371, 155], lineEnd: [399, 183], lineTextPosition: [372, 150] });
+        this.labelLines.set('MA', { lineStart: [445, 195], lineEnd: [407, 198], lineTextPosition: [447, 195] });
+        this.labelLines.set('RI', { lineStart: [445, 210], lineEnd: [415, 205], lineTextPosition: [447, 210] });
+        this.labelLines.set('CT', { lineStart: [445, 225], lineEnd: [403, 206], lineTextPosition: [447, 225] });
+        this.labelLines.set('NJ', { lineStart: [445, 240], lineEnd: [393, 218], lineTextPosition: [447, 240] });
     }
 
     updateD3(props) {
@@ -79,14 +83,10 @@ export class StateMap extends Component<StateMapProps, {}> {
             const labelLineInfo = this.labelLines.get(stateCode);
             textPosition = labelLineInfo.lineTextPosition;
             const linePath = `M ${labelLineInfo.lineStart[0]},${labelLineInfo.lineStart[1]} L ${labelLineInfo.lineEnd[0]},${labelLineInfo.lineEnd[1]} Z`;
-            parts.push(<path key={stateCode + "line"} name={stateCode + "line"} d={linePath} />);
+            parts.push(<path key={stateCode + "line"} name={stateCode + "line"} d={linePath} className="labelLine"/>);
             backgroundColors.add(color);
             let filterName = this.filterNameFromColor(color);
             filterText = `url(#${filterName})`;
-            //parts.push(<text key={stateCode + "textBackground"} name={stateCode + "textBackground"} className="textBackground"
-            //    x={textPosition[0]} y={textPosition[1]} dy="0.25em"
-            //    style={{ stroke: color }}>{stateCode}</text>);
-                //style={{ backgroundColor: color }}>{stateCode}</text>);
         }
         else {
             textPosition = this.getCenter(parsedPath);

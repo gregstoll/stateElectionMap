@@ -3,6 +3,10 @@ path {
     stroke: gray;
 }
 
+.labelLine {
+    stroke-width: 1px;
+}
+
 text {
     font: 20px Helvetica, Arial, sans-serif;
     fill: #999;
