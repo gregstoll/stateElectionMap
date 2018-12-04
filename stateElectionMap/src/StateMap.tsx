@@ -86,6 +86,9 @@ export class StateMap extends Component<StateMapProps, {}> {
             textPosition = labelLineInfo.lineTextPosition;
             const linePath = `M ${labelLineInfo.lineStart[0]},${labelLineInfo.lineStart[1]} L ${labelLineInfo.lineEnd[0]},${labelLineInfo.lineEnd[1]} Z`;
             parts.push(<path key={stateCode + "line"} name={stateCode + "line"} d={linePath} />);
+            //TODO make this a style
+            parts.push(<text key={stateCode + "textBackground"} name={stateCode + "textBackground"}
+                x={textPosition[0]} y={textPosition[1]} dy="0.25em" style={{ stroke: color, strokeWidth: "0.3em" }}>{stateCode}</text>);
         }
         else {
             textPosition = this.getCenter(parsedPath);
@@ -172,9 +175,12 @@ export class StateMap extends Component<StateMapProps, {}> {
             });
         }
         // Make text elements go to the end so they draw on top
-        // first normal paths, then lines (pointing to text), then text
+        // first normal paths, then text background, then lines (pointing to text), then text
         let getPathValue = (x: JSX.Element): number => {
             if (x.type == 'text') {
+                if (x.props.name.endsWith("textBackground")) {
+                    return 2;
+                }
                 return 0;
             }
             // must be a path
@@ -182,10 +188,9 @@ export class StateMap extends Component<StateMapProps, {}> {
             if (name.endsWith("line")) {
                 return 1;
             }
-            return 2;
+            return 3;
         }
         paths.sort((a, b) => {
-            // first normal paths, then lines (pointing to text), then text
             let aValue = getPathValue(a);
             let bValue = getPathValue(b);
             if (aValue > bValue) {
@@ -195,15 +200,6 @@ export class StateMap extends Component<StateMapProps, {}> {
                 return 1;
             }
             return 0;
-            //let aIsText = a.type == 'text';
-            //let bIsText = b.type == 'text';
-            //if (aIsText && !bIsText) {
-            //    return 1;
-            //}
-            //if (!aIsText && bIsText) {
-            //    return -1;
-            //}
-            //return 0;
         });
         return <g transform={`scale(${scale} ${scale}) translate(${this.props.x + xOffset}, ${this.props.y + yOffset})`}>
             {paths}
