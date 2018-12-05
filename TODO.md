@@ -1,4 +1,3 @@
-- state codes on states - tidy up on non-cartogram
 - play animation
 - rollover points on graph
 - custom format for graph y-axis (D+5 versus R+5, etc)

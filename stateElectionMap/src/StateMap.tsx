@@ -5,7 +5,6 @@ import { StateName } from './DataHandling';
 import * as topojson from 'topojson'
 import polylabel from 'polylabel';
 import { isNullOrUndefined } from 'util';
-//TODO - namespace this, sheesh
 import parseColor from 'parse-color';
 
 import './StateMap.css';
@@ -51,9 +50,12 @@ export class StateMap extends Component<StateMapProps, {}> {
         this.labelLines.set('NH', { lineStart: [389, 155], lineEnd: [407, 187], lineTextPosition: [390, 150] });
         this.labelLines.set('VT', { lineStart: [371, 155], lineEnd: [399, 183], lineTextPosition: [372, 150] });
         this.labelLines.set('MA', { lineStart: [445, 195], lineEnd: [407, 198], lineTextPosition: [447, 195] });
-        this.labelLines.set('RI', { lineStart: [445, 210], lineEnd: [415, 205], lineTextPosition: [447, 210] });
+        this.labelLines.set('RI', { lineStart: [445, 210], lineEnd: [410, 205], lineTextPosition: [447, 210] });
         this.labelLines.set('CT', { lineStart: [445, 225], lineEnd: [403, 206], lineTextPosition: [447, 225] });
         this.labelLines.set('NJ', { lineStart: [445, 240], lineEnd: [393, 218], lineTextPosition: [447, 240] });
+        this.labelLines.set('DE', { lineStart: [445, 255], lineEnd: [391, 235], lineTextPosition: [447, 255] });
+        this.labelLines.set('MD', { lineStart: [445, 270], lineEnd: [381, 230], lineTextPosition: [447, 270] });
+        this.labelLines.set('DC', { lineStart: [445, 285], lineEnd: [379, 235], lineTextPosition: [447, 285] });
     }
 
     updateD3(props) {
