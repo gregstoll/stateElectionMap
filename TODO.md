@@ -6,7 +6,6 @@
 - url fragments
 - UI cleanup
 - code TODOs
-- data from 1976
 - data from 1972
 - data from 1968
 - data from 1964
