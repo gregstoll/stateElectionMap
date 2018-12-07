@@ -4,11 +4,14 @@ import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
 import Slider from 'rc-slider';
-import { LineChart } from 'react-easy-chart';
 import * as d3 from 'd3';
+import ReactChartkick, { LineChart } from 'react-chartkick';
+import Chart from 'chart.js';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
+
+ReactChartkick.addAdapter(Chart);
 
 interface AppState {
     year: number,
@@ -130,30 +133,71 @@ class App extends Component<{}, AppState> {
         }
 
         if (this.state.selectedStateCode) {
-            let data = [], zeroes = [];
+            let data = {};
             let min = 0, max = 0;
             for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
                 let yearElectionData = this.state.electionData.get(year);
                 let yearBaselineDAdvantage = this.state.rawResults ? 0 : yearElectionData.nationalDAdvantage;
                 let stateData = yearElectionData.stateResults.get(this.state.selectedStateCode);
                 let y = this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage);
-                data.push({ x: year, y: y});
-                zeroes.push({ x: year, y: 0 });
+                data[year] = y;
 
                 min = Math.min(min, y);
                 max = Math.max(max, y);
             }
+            min = Math.floor(min / 5) * 5;
+            max = Math.ceil(max / 5) * 5;
             // TODO optimize this
             let stateNameObj = _.find(this.state.stateNames, stateNameObj => stateNameObj.code === this.state.selectedStateCode);
             let yMin = Math.min(-2, min);
             let yMax = Math.max(2, max);
             lineChart = <div style={{ width: 600 }}>{stateNameObj.name}
                 <LineChart width={500} height={300}
-                    margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
-                    data={[data, zeroes]} axes grid axisLabels={{ x: "Year", y: "D advantage" }} lineColors={['green', 'gray']}
-                    yDomainRange={[yMin, yMax]}
-                    xType={'text'} xTicks={data.length - 1} />
-            </div>;
+                    data={[{ "name": "margin", "data": data }]}
+                    xtitle="Year" ytitle={this.state.rawResults ? "advantage" : "relative to national"} curve={false} legend={false} colors={['green', 'gray']}
+                    min={min} max={max}
+                    library={{
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    callback: function (value, index, values) {
+                                        if (value > 0) {
+                                            return "D+" + value;
+                                        }
+                                        else if (value < 0) {
+                                            return "R+" + (-1 * value);
+                                        }
+                                        else {
+                                            return "Even"
+                                        }
+                                    }
+                                }
+                            }]
+                        },
+                        tooltips: {
+                            callbacks: {
+                                label: function (tooltipItem, data) {
+                                    let label = data.datasets[tooltipItem.datasetIndex].label || '';
+
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    let valueText = "Even";
+                                    //TODO - make 9.0 instead of 9
+                                    if (tooltipItem.yLabel > 0) {
+                                        valueText = "D+" + Math.round(tooltipItem.yLabel * 10) / 10 + "%";
+                                    }
+                                    else if (tooltipItem.yLabel < 0) {
+                                        valueText = "R+" + Math.round(-1 * tooltipItem.yLabel * 10) / 10 + "%";
+                                    }
+                                    label += valueText;
+                                    return label;
+                                }
+                            }
+                        }
+                    }}
+                />
+                </div>;
         }
 
         // https://react-component.github.io/slider/examples/slider.html
