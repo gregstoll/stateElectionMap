@@ -183,12 +183,11 @@ class App extends Component<{}, AppState> {
                                         label += ': ';
                                     }
                                     let valueText = "Even";
-                                    //TODO - make 9.0 instead of 9
                                     if (tooltipItem.yLabel > 0) {
-                                        valueText = "D+" + Math.round(tooltipItem.yLabel * 10) / 10 + "%";
+                                        valueText = "D+" + tooltipItem.yLabel.toFixed(1) + "%";
                                     }
                                     else if (tooltipItem.yLabel < 0) {
-                                        valueText = "R+" + Math.round(-1 * tooltipItem.yLabel * 10) / 10 + "%";
+                                        valueText = "R+" + (-1 * tooltipItem.yLabel).toFixed(1) + "%";
                                     }
                                     label += valueText;
                                     return label;
