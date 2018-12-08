@@ -17,7 +17,7 @@
     "@types/polylabel": "^1.0.5",
     "@types/react": "^16.7.6",
     "@types/react-dom": "^16.0.9",
-    "@types/semantic-ui": "^2.2.6",
+    "@types/semantic-ui": "2.2.6",
     "chart.js": "^2.7.3",
     "d3": "^5.7.0",
     "es6-promise": "^4.2.5",
