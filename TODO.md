@@ -1,12 +1,11 @@
 - play animation
 - rollover points on graph
-- custom format for graph y-axis (D+5 versus R+5, etc)
+- fix up graph y-axis labels (more uniform?)
 - get rid of border lines on graph?
 - writeup
 - url fragments
 - UI cleanup
 - code TODOs
-- data from 1972
 - data from 1968
 - data from 1964
 - data from 1960
