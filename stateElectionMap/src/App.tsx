@@ -18,10 +18,6 @@ interface AppState {
     selectedStateCode: string,
     rawResults: boolean,
     isCartogram: boolean,
-    //TODO - figure out this type and use it everywhere
-    //TODO - combine with DataCollection I guess
-    usTopoJson: any,
-    cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
     stateNames: StateName[],
     electionData: ElectionData
 }
@@ -32,8 +28,6 @@ class App extends Component<{}, AppState> {
         selectedStateCode: undefined,
         isCartogram: true,
         rawResults: true,
-        usTopoJson: null,
-        cartogram: null,
         stateNames: null,
         electionData: null
     };
@@ -111,7 +105,7 @@ class App extends Component<{}, AppState> {
     }
 
     render() {
-        if (!(this.state.usTopoJson && this.state.stateNames && this.state.year)) {
+        if (!(this.state.stateNames && this.state.year)) {
             return <div>Loading</div>;
         }
 
@@ -203,10 +197,7 @@ class App extends Component<{}, AppState> {
         return (
             <div className="App">
                 <svg width="1100" height="500">
-                    <StateMap usTopoJson={this.state.usTopoJson}
-                        cartogram={this.state.cartogram}
-                        isCartogram={this.state.isCartogram}
-                        stateNames={this.state.stateNames}
+                    <StateMap isCartogram={this.state.isCartogram}
                         stateColors={stateColors}
                         stateTitles={stateTitles}
                         stateSelectedCallback={this.onStateSelected}

@@ -9,11 +9,7 @@ import parseColor from 'parse-color';
 
 import './StateMap.css';
 
-//TODO - make StateMap own the usTopoJson and cartogram stuff (including fetching it)
 interface StateMapProps {
-    usTopoJson: any,
-    cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
-    stateNames: StateName[],
     stateColors: Map<string, string>,
     stateTitles: Map<string, string>,
     stateSelectedCallback: (stateCode: string) => void,
@@ -24,19 +20,31 @@ interface StateMapProps {
     height: number
 };
 
+interface StateMapDrawingInfo {
+    //TODO - figure out this type and use it everywhere
+    usTopoJson: any,
+    cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
+    stateNames: StateName[]
+};
+
+interface StateMapState {
+    drawingInfo: StateMapDrawingInfo
+}
+
 interface StateLineInfo {
     lineStart: [number, number],
     lineEnd: [number, number],
     lineTextPosition: [number, number]
 };
 
-export class StateMap extends Component<StateMapProps, {}> {
+export class StateMap extends Component<StateMapProps, StateMapState>{
     projection: d3.GeoProjection;
     geoPath: d3.GeoPath;
     labelLines: Map<string, StateLineInfo>;
 
     constructor(props) {
         super(props);
+        this.state = { drawingInfo: undefined };
 
         this.projection = d3.geoAlbersUsa().scale(1280);
         this.geoPath = d3.geoPath().projection(this.projection);
@@ -44,6 +52,46 @@ export class StateMap extends Component<StateMapProps, {}> {
         this.updateD3(props);
         this.initLabelLines();
     }
+
+    componentDidMount() {
+        this.loadAllData();
+    }
+
+    private loadAllData(): void {
+        //TODO error handling
+        this.getDataAsync().then(value => {
+            this.setState({ drawingInfo: value });
+        });
+    }
+
+    private async getDataAsync(): Promise<StateMapDrawingInfo> {
+        let usPromise = d3.json('data/us.json');
+        let stateNamesPromise = d3.tsv('data/us-state-names.tsv', this.cleanStateName);
+        let cartogramPromise = this.getCartogramAsync();
+        let us = await usPromise;
+        let stateNames = await stateNamesPromise;
+        let cartogram = await cartogramPromise;
+        return {
+            usTopoJson: us,
+            cartogram: cartogram,
+            stateNames: stateNames,
+        };
+    }
+
+    private cleanStateName(d: any): StateName {
+        return {
+            code: d.code,
+            id: Number(d.id),
+            name: d.name
+        };
+    }
+
+    private async getCartogramAsync(): Promise<d3.Selection<HTMLElement, () => any, null, undefined>> {
+        const xml = await d3.xml('data/cartograms/fivethirtyeight.svg', { headers: new Headers({ "Content-Type": "image/svg+xml" }) });
+        //TODO error handling
+        return d3.select(xml.documentElement);
+    };
+
 
     initLabelLines() {
         this.labelLines = new Map<string, StateLineInfo>();
@@ -145,13 +193,16 @@ export class StateMap extends Component<StateMapProps, {}> {
     }
 
     render() {
+        if (isNullOrUndefined(this.state.drawingInfo)) {
+            return <div>Loading...</div>;
+        }
         // https://d3-geomap.github.io/map/choropleth/us-states/
         //const map = d3.geomap.choropleth().geofile('/d3-geomap/topojson/countries/USA.json').projection(this.projection);
         let paths: JSX.Element[] = [];
         let backgroundColors = new Set<string>();
         let scale = 1, xOffset = 0, yOffset = 0;
         if (!this.props.isCartogram) {
-            const us = this.props.usTopoJson;
+            const us = this.state.drawingInfo.usTopoJson;
             scale = 1.75;
             yOffset = -50 * scale;
             const geometries = us.objects.states.geometries;
@@ -159,7 +210,7 @@ export class StateMap extends Component<StateMapProps, {}> {
                 let topoState = geometries[i];
                 let stateId = topoState.id;
                 // TODO optimize this
-                let stateNameObj = _.find(this.props.stateNames, stateNameObj => stateNameObj.id === stateId);
+                let stateNameObj = _.find(this.state.drawingInfo.stateNames, stateNameObj => stateNameObj.id === stateId);
                 let stateCode = stateNameObj.code;
                 for (let path of this.getSVGPaths(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState)), backgroundColors)) {
                     paths.push(path);
@@ -168,11 +219,11 @@ export class StateMap extends Component<StateMapProps, {}> {
         }
         else {
             let that = this;
-            let svgPaths = this.props.cartogram.selectAll("path").each(function () {
+            let svgPaths = this.state.drawingInfo.cartogram.selectAll("path").each(function () {
                 let thisPath = this as SVGPathElement;
                 let stateCode = thisPath.getAttribute("id");
                 // TODO optimize this
-                let stateNameObj = _.find(that.props.stateNames, stateNameObj => stateNameObj.code === stateCode);
+                let stateNameObj = _.find(that.state.drawingInfo.stateNames, stateNameObj => stateNameObj.code === stateCode);
                 let pathString = thisPath.getAttribute("d");
                 for (let path of that.getSVGPaths(stateCode, stateNameObj.name, pathString, backgroundColors)) {
                     paths.push(path);
