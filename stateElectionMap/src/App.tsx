@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { StateMap } from './StateMap';
 import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
-import { loadAllData, DataCollection, StateName, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
+import { loadAllData, DataCollection, StateName, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
 import Slider from 'rc-slider';
 import * as d3 from 'd3';
 import ReactChartkick, { LineChart } from 'react-chartkick';
@@ -18,7 +18,7 @@ interface AppState {
     selectedStateCode: string,
     rawResults: boolean,
     isCartogram: boolean,
-    stateNames: StateName[],
+    stateInfos: StateInfos,
     electionData: ElectionData
 }
 
@@ -28,7 +28,7 @@ class App extends Component<{}, AppState> {
         selectedStateCode: undefined,
         isCartogram: true,
         rawResults: true,
-        stateNames: null,
+        stateInfos: null,
         electionData: null
     };
 
@@ -105,7 +105,7 @@ class App extends Component<{}, AppState> {
     }
 
     render() {
-        if (!(this.state.stateNames && this.state.year)) {
+        if (!(this.state.stateInfos && this.state.year)) {
             return <div>Loading</div>;
         }
 
@@ -115,8 +115,9 @@ class App extends Component<{}, AppState> {
         let electionData = this.state.electionData.get(this.state.year);
         let nationalDAdvantage = electionData.nationalDAdvantage;
         let baselineDAdvantage = this.state.rawResults ? 0 : electionData.nationalDAdvantage;
-        for (let i in this.state.stateNames) {
-            let stateCode = this.state.stateNames[i].code;
+        //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
+        let a = Array.from(this.state.stateInfos.codeToStateName.entries());
+        for (let [stateCode, value] of a) {
             let stateData = electionData.stateResults.get(stateCode);
             if (stateData) {
                 // TODO - duplication or something
@@ -141,8 +142,7 @@ class App extends Component<{}, AppState> {
             }
             min = Math.floor(min / 5) * 5;
             max = Math.ceil(max / 5) * 5;
-            // TODO optimize this
-            let stateNameObj = _.find(this.state.stateNames, stateNameObj => stateNameObj.code === this.state.selectedStateCode);
+            let stateNameObj = this.state.stateInfos.codeToStateName.get(this.state.selectedStateCode);
             let yMin = Math.min(-2, min);
             let yMax = Math.max(2, max);
             lineChart = <div style={{ width: 600 }}>{stateNameObj.name}

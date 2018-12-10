@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import * as d3 from 'd3';
 import _ from 'lodash';
-import { StateName } from './DataHandling';
+import { StateName, StateInfos } from './DataHandling';
 import * as topojson from 'topojson'
 import polylabel from 'polylabel';
 import { isNullOrUndefined } from 'util';
@@ -24,7 +24,7 @@ interface StateMapDrawingInfo {
     //TODO - figure out this type and use it everywhere
     usTopoJson: any,
     cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
-    stateNames: StateName[]
+    stateInfos: StateInfos
 };
 
 interface StateMapState {
@@ -74,7 +74,7 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
         return {
             usTopoJson: us,
             cartogram: cartogram,
-            stateNames: stateNames,
+            stateInfos: this.makeStateInfos(stateNames)
         };
     }
 
@@ -84,6 +84,15 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
             id: Number(d.id),
             name: d.name
         };
+    }
+
+    private makeStateInfos(names: StateName[]): StateInfos {
+        let stateInfos: StateInfos = { codeToStateName: new Map<string, StateName>(), idToStateName: new Map<number, StateName>() };
+        for (let name of names) {
+            stateInfos.codeToStateName.set(name.code, name);
+            stateInfos.idToStateName.set(name.id, name);
+        }
+        return stateInfos;
     }
 
     private async getCartogramAsync(): Promise<d3.Selection<HTMLElement, () => any, null, undefined>> {
@@ -209,8 +218,7 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
             for (let i = 0; i < geometries.length; ++i) {
                 let topoState = geometries[i];
                 let stateId = topoState.id;
-                // TODO optimize this
-                let stateNameObj = _.find(this.state.drawingInfo.stateNames, stateNameObj => stateNameObj.id === stateId);
+                let stateNameObj = this.state.drawingInfo.stateInfos.idToStateName.get(stateId);
                 let stateCode = stateNameObj.code;
                 for (let path of this.getSVGPaths(stateCode, stateNameObj.name, this.geoPath(topojson.feature(us, topoState)), backgroundColors)) {
                     paths.push(path);
@@ -222,8 +230,7 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
             let svgPaths = this.state.drawingInfo.cartogram.selectAll("path").each(function () {
                 let thisPath = this as SVGPathElement;
                 let stateCode = thisPath.getAttribute("id");
-                // TODO optimize this
-                let stateNameObj = _.find(that.state.drawingInfo.stateNames, stateNameObj => stateNameObj.code === stateCode);
+                let stateNameObj = that.state.drawingInfo.stateInfos.codeToStateName.get(stateCode);
                 let pathString = thisPath.getAttribute("d");
                 for (let path of that.getSVGPaths(stateCode, stateNameObj.name, pathString, backgroundColors)) {
                     paths.push(path);

@@ -9,6 +9,11 @@ export interface StateName {
     name: string
 };
 
+export interface StateInfos {
+    codeToStateName: Map<string, StateName>,
+    idToStateName: Map<number, StateName>
+};
+
 const cleanStateName = (d: any): StateName => ({
     code: d.code,
     id: Number(d.id),
@@ -45,7 +50,7 @@ export interface ElectionYearData {
 }
 
 export interface DataCollection {
-    stateNames: StateName[],
+    stateInfos: StateInfos,
     electionData: ElectionData
 };
 
@@ -91,10 +96,19 @@ export const loadAllData = async (): Promise<DataCollection> => {
     }
     let stateNames = await stateNamesPromise;
     return {
-        stateNames: stateNames,
+        stateInfos: makeStateInfos(stateNames),
         electionData: electionData
     };
 };
+
+function makeStateInfos(names: StateName[]): StateInfos {
+    let stateInfos: StateInfos = { codeToStateName: new Map<string, StateName>(), idToStateName: new Map<number, StateName>() };
+    for (let name of names) {
+        stateInfos.codeToStateName.set(name.code, name);
+        stateInfos.idToStateName.set(name.id, name);
+    }
+    return stateInfos;
+}
 
 function setNationalDAdvantage(electionYearData: ElectionYearData) {
     let dTotal = 0, rTotal = 0, allTotal = 0;
