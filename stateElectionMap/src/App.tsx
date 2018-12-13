@@ -145,7 +145,7 @@ class App extends Component<{}, AppState> {
             let stateNameObj = this.state.stateInfos.codeToStateName.get(this.state.selectedStateCode);
             let yMin = Math.min(-2, min);
             let yMax = Math.max(2, max);
-            lineChart = <div style={{ width: 600 }}>{stateNameObj.name}
+            lineChart = <div style={{ width: 500 }} className="centerFixedWidth">{stateNameObj.name}
                 <LineChart width={500} height={300}
                     data={[{ "name": "margin", "data": data }]}
                     xtitle="Year" ytitle={this.state.rawResults ? "advantage" : "relative to national"} curve={false} legend={false} colors={['green', 'gray']}
@@ -209,16 +209,22 @@ class App extends Component<{}, AppState> {
                 <div>
                     <Button.Group>
                         <Button active={this.state.rawResults} onClick={() => this.setState({ rawResults: true })}>Actual results</Button>
+                        <Button.Or />
                         <Button active={!this.state.rawResults} onClick={() => this.setState({ rawResults: false })}>Relative to popular vote</Button>
                     </Button.Group>
+                    <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
                     <Button.Group>
                         <Button active={!this.state.isCartogram} onClick={() => this.setState({ isCartogram: false })}>Normal</Button>
+                        <Button.Or />
                         <Button active={this.state.isCartogram} onClick={() => this.setState({ isCartogram: true })}>Cartogram</Button>
                     </Button.Group>
                 </div>
-                <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
-                <div style={{ width: 500 }}>
+                <div style={{ width: 500 }} className="centerFixedWidth">
                     <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange} />
+                    <div>
+                        {/*TODO refactor into a component*/}
+                        <Button>Play</Button>
+                    </div>
                 </div>
                 {lineChart}
 
