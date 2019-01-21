@@ -7,6 +7,7 @@ import { isUndefined } from 'util';
 
 export interface MapDateSliderProps {
     // Exactly one of this and yearsPerTick should be defined (the other should be undefined)
+    //TODO enforce this?
     ticksPerYear: number,
     // Exactly one of this and ticksPerYear should be defined (the other should be undefined)
     yearsPerTick: number,
@@ -18,10 +19,11 @@ export interface MapDateSliderProps {
 
 export interface MapDate {
     year: number,
+    // 0 indexed (verify this is in range)
     endMonth: number
 }
 
-class MapDateSlider extends Component<MapDateSliderProps, {}> {
+export class MapDateSlider extends Component<MapDateSliderProps, {}> {
     monthChangePerTick() {
         if (isUndefined(this.props.ticksPerYear)) {
             return this.props.yearsPerTick * 12;
@@ -40,7 +42,7 @@ class MapDateSlider extends Component<MapDateSliderProps, {}> {
         let totalMonthDifference = 12 * yearDifference + monthDifference;
         return totalMonthDifference / this.monthChangePerTick();
     }
-    onSliderChange(value: number) {
+    onSliderChange = (value: number) => {
         this.props.onDateChange(this.sliderIndexToMapDate(value));
     }
     render() {

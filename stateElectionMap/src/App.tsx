@@ -3,8 +3,7 @@ import { StateMap } from './StateMap';
 import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
-import Slider from 'rc-slider';
-import * as d3 from 'd3';
+import { MapDateSlider, MapDate } from './MapDateSlider';
 import ReactChartkick, { LineChart } from 'react-chartkick';
 import Chart from 'chart.js';
 
@@ -96,15 +95,15 @@ class App extends Component<{}, AppState> {
         return "Even";
     }
 
-    onSliderChange = (value) => {
-        this.setState({ year: value });
+    onSliderDateChange = (date: MapDate) => {
+        this.setState({ year: date.year });
     }
 
     onStateSelected = (stateCode) => {
         this.setState({ selectedStateCode: stateCode });
     }
 
-    render() {
+    render = () => {
         if (!(this.state.stateInfos && this.state.year)) {
             return <div>Loading</div>;
         }
@@ -220,11 +219,13 @@ class App extends Component<{}, AppState> {
                     </Button.Group>
                 </div>
                 <div style={{ width: 500 }} className="centerFixedWidth">
-                    <Slider min={MIN_YEAR} max={MAX_YEAR} step={YEAR_STEP} value={this.state.year} onChange={this.onSliderChange} />
-                    <div>
-                        {/*TODO refactor into a component*/}
-                        <Button>Play</Button>
-                    </div>
+                    <MapDateSlider
+                        yearsPerTick={YEAR_STEP}
+                        ticksPerYear={undefined}
+                        startDate={{ year: MIN_YEAR, endMonth: 11 }}
+                        endDate={{ year: MAX_YEAR, endMonth: 11 }}
+                        currentDate={{ year: this.state.year, endMonth: 11 }}
+                        onDateChange={this.onSliderDateChange}/>
                 </div>
                 {lineChart}
 
