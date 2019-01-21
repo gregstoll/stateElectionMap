@@ -12,7 +12,8 @@ export interface MapDateSliderProps {
     yearsPerTick: number,
     startDate: MapDate,
     endDate: MapDate,
-    currentDate: MapDate
+    currentDate: MapDate,
+    onDateChange: (MapDate) => void
 }
 
 export interface MapDate {
@@ -29,19 +30,18 @@ class MapDateSlider extends Component<MapDateSliderProps, {}> {
             return 12 / this.props.ticksPerYear;
         }
     }
-    sliderIndexToMapDate(sliderIndex: number) {
+    sliderIndexToMapDate(sliderIndex: number): MapDate {
         let newMonth = this.props.startDate.endMonth + this.monthChangePerTick() * sliderIndex;
         return { year: this.props.startDate.year + Math.floor(newMonth / 12), endMonth: newMonth % 12 };
     }
-    mapDateToSliderIndex(mapDate: MapDate) {
+    mapDateToSliderIndex(mapDate: MapDate): number {
         let yearDifference = mapDate.year - this.props.startDate.year;
         let monthDifference = mapDate.endMonth - this.props.startDate.endMonth;
         let totalMonthDifference = 12 * yearDifference + monthDifference;
         return totalMonthDifference / this.monthChangePerTick();
     }
-    onSliderChange = (value) => {
-        //TODO
-        this.setState({ year: value });
+    onSliderChange(value: number) {
+        this.props.onDateChange(this.sliderIndexToMapDate(value));
     }
     render() {
         // https://react-component.github.io/slider/examples/slider.html
