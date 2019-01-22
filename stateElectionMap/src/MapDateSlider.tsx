@@ -17,10 +17,20 @@ export interface MapDateSliderProps {
     onDateChange: (MapDate) => void
 }
 
-export interface MapDate {
-    year: number,
-    // 0 indexed (verify this is in range)
-    endMonth: number
+export class MapDate {
+    public readonly year: number;
+    // 0 indexed
+    public readonly endMonth: number
+    constructor(year: number, endMonth: number) {
+        this.year = year;
+        if (endMonth < 0 || endMonth > 11) {
+            throw "endMonth is out of range (must be >= 0 and < 12, got " + endMonth;
+        }
+        this.endMonth = endMonth;
+    }
+    equals(other: MapDate): boolean {
+        return this.year == other.year && this.endMonth == other.endMonth;
+    }
 }
 
 interface MapDateSliderState {
@@ -43,7 +53,7 @@ export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderSt
     }
     sliderIndexToMapDate(sliderIndex: number): MapDate {
         let newMonth = this.props.startDate.endMonth + this.monthChangePerTick() * sliderIndex;
-        return { year: this.props.startDate.year + Math.floor(newMonth / 12), endMonth: newMonth % 12 };
+        return new MapDate(this.props.startDate.year + Math.floor(newMonth / 12), newMonth % 12);
     }
     mapDateToSliderIndex(mapDate: MapDate): number {
         let yearDifference = mapDate.year - this.props.startDate.year;
@@ -74,9 +84,7 @@ export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderSt
         setTimeout(this.advanceDate, 500);
     }
     sliderAtEnd(): boolean {
-        //TODO - better way to check equals?
-        return (this.props.currentDate.year == this.props.endDate.year &&
-            this.props.currentDate.endMonth == this.props.endDate.endMonth);
+        return this.props.currentDate.equals(this.props.endDate);
     }
     clickStopPlayButton = () => {
         if (this.state.isPlaying) {

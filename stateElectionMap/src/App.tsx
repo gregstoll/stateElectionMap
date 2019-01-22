@@ -222,9 +222,9 @@ class App extends Component<{}, AppState> {
                     <MapDateSlider
                         yearsPerTick={YEAR_STEP}
                         ticksPerYear={undefined}
-                        startDate={{ year: MIN_YEAR, endMonth: 11 }}
-                        endDate={{ year: MAX_YEAR, endMonth: 11 }}
-                        currentDate={{ year: this.state.year, endMonth: 11 }}
+                        startDate={new MapDate(MIN_YEAR, 11)}
+                        endDate={new MapDate(MAX_YEAR, 11)}
+                        currentDate={new MapDate(this.state.year, 11)}
                         onDateChange={this.onSliderDateChange}/>
                 </div>
                 {lineChart}
