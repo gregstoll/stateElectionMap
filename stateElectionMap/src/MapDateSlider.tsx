@@ -23,7 +23,16 @@ export interface MapDate {
     endMonth: number
 }
 
-export class MapDateSlider extends Component<MapDateSliderProps, {}> {
+interface MapDateSliderState {
+    isPlaying: boolean
+}
+
+export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderState> {
+    constructor(props) {
+        super(props);
+        this.state = { isPlaying: false };
+    }
+
     monthChangePerTick() {
         if (isUndefined(this.props.ticksPerYear)) {
             return this.props.yearsPerTick * 12;
@@ -45,13 +54,48 @@ export class MapDateSlider extends Component<MapDateSliderProps, {}> {
     onSliderChange = (value: number) => {
         this.props.onDateChange(this.sliderIndexToMapDate(value));
     }
+    advanceDate = () => {
+        if (!this.state.isPlaying) {
+            return;
+        }
+        //TODO - is this a race condition when we start playing from the end?
+        if (this.sliderAtEnd()) {
+            this.setState({ isPlaying: false });
+            return;
+        }
+        // advance date
+        let currentSliderIndex = this.mapDateToSliderIndex(this.props.currentDate);
+        let newDate = this.sliderIndexToMapDate(currentSliderIndex + 1);
+        this.props.onDateChange(newDate);
+        this.callAdvanceDateInFuture();
+    }
+    callAdvanceDateInFuture = () => {
+        //TODO - setting for speed
+        setTimeout(this.advanceDate, 500);
+    }
+    sliderAtEnd(): boolean {
+        //TODO - better way to check equals?
+        return (this.props.currentDate.year == this.props.endDate.year &&
+            this.props.currentDate.endMonth == this.props.endDate.endMonth);
+    }
+    clickStopPlayButton = () => {
+        if (this.state.isPlaying) {
+            this.setState({ isPlaying: false });
+        } else {
+            this.setState({ isPlaying: true });
+            if (this.sliderAtEnd()) {
+                this.props.onDateChange(this.props.startDate);
+            }
+            this.callAdvanceDateInFuture();
+        }
+    }
     render() {
         // https://react-component.github.io/slider/examples/slider.html
         return (
             <div style={{ width: 500 }} className="centerFixedWidth">
                 <Slider min={0} max={this.mapDateToSliderIndex(this.props.endDate)} step={1} value={this.mapDateToSliderIndex(this.props.currentDate)} onChange={this.onSliderChange} />
                 <div>
-                    <Button>Play</Button>
+                    <Button onClick={() => this.clickStopPlayButton()}>{this.state.isPlaying ? "Stop" : "Play"}</Button>
                 </div>
             </div>
         );
