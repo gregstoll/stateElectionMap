@@ -1,4 +1,3 @@
-- play animation
 - writeup
 - url fragments
 - UI cleanup
