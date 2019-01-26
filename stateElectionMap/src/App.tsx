@@ -195,7 +195,7 @@ class App extends Component<{}, AppState> {
         // https://react-component.github.io/slider/examples/slider.html
         return (
             <div className="App">
-                <svg width="1100" height="500">
+                <svg width="900" height="500">
                     <StateMap isCartogram={this.state.isCartogram}
                         stateColors={stateColors}
                         stateTitles={stateTitles}
@@ -228,7 +228,6 @@ class App extends Component<{}, AppState> {
                         onDateChange={this.onSliderDateChange}/>
                 </div>
                 {lineChart}
-
             </div>
         );
     }
