@@ -25,6 +25,8 @@
     <noscript>
       You need to enable JavaScript to run this app.
     </noscript>
+    <h1 style="text-align: center;">State Election Map</h1>
+    <p style="text-align: center;">Tip: Click a state to see a graph of results over time!</p>
     <div id="root"></div>
     <!--
       This HTML file is a template.
@@ -36,9 +38,27 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
-      <h1>State Election Map</h1>
-      <ul>
-          <li><b>What is this?</b>  This is a map showing US election results by state.</li>
-      </ul>
+      <div style="max-width: 800px; margin-left: auto; margin-right: auto;">
+          <ul>
+              <li><b>What is this?</b>  This is a map showing US election results by state.</li>
+              <li><b>What's interesting about it?</b>  It's kinda neat by itself, but the best part is if you change the mode to
+              <b>Relative to popular vote</b>.  Then you can see which states have become more Democratic/Republican relative to the
+              national popular vote over time!</li>
+              <li><b>What are some interesting states to click on?</b>  Here are some good ones:
+                  <ul>
+                      <li><b>Missouri</b> is a state that used to be a true battleground state - as recently as 1992 it was
+                      more Democratic than average.  But ever since then it's made an accelerating trend to be more and more Republican.</li>
+                      <li><b>Georgia</b> has been pretty consistently more Republican than average...except in 1976 and 1980 when
+                      Jimmy Carter was running.</li>
+                      <li><b>New Hampshire</b> used to be pretty Republican, but ever since 1996 it's been very close to even.</li>
+                  </ul>
+              </li>
+              <li><b>How does this account for third party candidates?</b> The margin shown is a percentage of the total vote from that state,
+              including third party candidates.  (notice Utah's much lower Republican margin in 2016)</li>
+              <li><b>Why does this only go back to 1972?</b> Honestly, because a third party (the American Independent Party)
+              <a href="https://en.wikipedia.org/wiki/1968_United_States_presidential_election">a few states</a> and I wasn't sure how best to handle that.</li>
+              </ul>
+          <p><i>Colors by <a href="http://colorbrewer2.org/?type=diverging&scheme=RdBu&n=11#">ColorBrewer 2.0</a></i></p>
+      </div>
   </body>
 </html>
