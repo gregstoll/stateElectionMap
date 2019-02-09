@@ -186,7 +186,6 @@ class App extends Component<{}, AppState> {
         for (let [stateCode, value] of a) {
             let stateData = electionData.stateResults.get(stateCode);
             if (stateData) {
-                // TODO - duplication or something
                 let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
                 stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
                 stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage) + "\n" + (this.state.rawResults ? "Actual results" : "Relative to popular vote"));
