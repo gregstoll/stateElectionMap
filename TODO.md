@@ -1,5 +1,4 @@
 - writeup
-- url fragments
 - UI cleanup
 - code TODOs
 

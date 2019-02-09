@@ -19,7 +19,8 @@ interface AppState {
     rawResults: boolean,
     isCartogram: boolean,
     stateInfos: StateInfos,
-    electionData: ElectionData
+    electionData: ElectionData,
+    haveUpdatedFromHash: boolean,
 }
 
 class App extends Component<{}, AppState> {
@@ -29,7 +30,8 @@ class App extends Component<{}, AppState> {
         isCartogram: true,
         rawResults: true,
         stateInfos: null,
-        electionData: null
+        electionData: null,
+        haveUpdatedFromHash: false
     };
 
     componentDidMount() {
@@ -126,8 +128,31 @@ class App extends Component<{}, AppState> {
             }
             if (hashParts.has("state")) {
                 let stateCode = hashParts.get("state");
+                if (this.state.stateInfos.codeToStateName.has(stateCode)) {
+                    newState['selectedStateCode'] = stateCode;
+                }
             }
+            if (hashParts.has("cartogram")) {
+                let num = parseInt(hashParts.get("cartogram"), 10);
+                if (num === 1) {
+                    newState['isCartogram'] = true;
+                }
+                else if (num === 0) {
+                    newState['isCartogram'] = false;
+                }
+            }
+            if (hashParts.has("actualResults")) {
+                let num = parseInt(hashParts.get("actualResults"), 10);
+                if (num === 1) {
+                    newState['rawResults'] = true;
+                }
+                else if (num === 0) {
+                    newState['rawResults'] = false;
+                }
+            }
+            this.setState(newState);
         }
+        this.setState({ haveUpdatedFromHash: true });
     }
 
     updateHash = () => {
@@ -143,7 +168,12 @@ class App extends Component<{}, AppState> {
         if (!(this.state.stateInfos && this.state.year)) {
             return <div>Loading</div>;
         }
-        this.updateHash();
+        if (this.state.haveUpdatedFromHash) {
+            this.updateHash();
+        }
+        else {
+            this.setStateFromHash();
+        }
 
         let stateColors = new Map<string, string>();
         let stateTitles = new Map<string, string>();
