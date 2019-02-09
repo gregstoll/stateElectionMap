@@ -13,6 +13,7 @@ interface StateMapProps {
     stateColors: Map<string, string>,
     stateTitles: Map<string, string>,
     stateSelectedCallback: (stateCode: string) => void,
+    stateClearedCallback: () => void,
     isCartogram: boolean,
     x: number,
     y: number,
@@ -116,15 +117,35 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
     }
 
     updateD3(props) {
+        // Make the actual SVG be square, because that's how the paths (especially for Normal mode)
+        // are laid out.
+        let actualDimension = Math.min(props.width, props.height);
         this.projection
-            .translate([props.width / 2, props.height / 2])
-            .scale(props.width * 1.0);
+            .translate([actualDimension / 2, actualDimension / 2])
+            .scale(actualDimension * 1.0);
     }
 
-    stateClick = event => {
+    stateClick = (event: React.MouseEvent<SVGElement>) => {
         let stateCode: string = event.currentTarget.attributes["name"].value;
         this.props.stateSelectedCallback(stateCode);
     };
+
+    rootClick = (event: React.MouseEvent<SVGGElement>) => {
+        // event.target is the childmost thing that got clicked on
+        // (event.currentTarget is the element we registered on, which is not helpful)
+        let target = event.target as SVGElement;
+        if (isNullOrUndefined(target))
+        {
+            return;
+        }
+        let nameAttribute: string = target.attributes["name"];
+        // TODO - this is a little brittle, I guess, it assumes that the root SVG
+        // thing doesn't have a name
+        if (isNullOrUndefined(nameAttribute))
+        {
+            this.props.stateClearedCallback();
+        }
+    }
 
     getSVGPaths = (stateCode: string, stateName: string, path: string, backgroundColors: Set<string>): Array<JSX.Element> => {
         if (isNullOrUndefined(path)) {
@@ -154,7 +175,7 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
             <title>{title}</title>
         </path>);
         parts.push(<text name={stateCode} x={textPosition[0]} y={textPosition[1]} key={stateCode + "text"}
-            dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)} filter={filterText}>{stateCode}</text>);
+            dy="0.25em" onClick={this.stateClick} stroke={this.getLabelColor(color)} filter={filterText}><title>{title}</title>{stateCode}</text>);
         return parts;
     };
 
@@ -272,11 +293,13 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
                 <feComposite in="SourceGraphic" />
             </filter>);
         }
-        return <g transform={`scale(${scale} ${scale}) translate(${this.props.x + xOffset}, ${this.props.y + yOffset})`}>
-            <defs>
-                {filters}
-            </defs>
-            {paths}
-        </g>;
+        return <svg width={this.props.width} height={this.props.height} onClick={this.rootClick}>
+            <g transform={`scale(${scale} ${scale}) translate(${this.props.x + xOffset}, ${this.props.y + yOffset})`} onClick={this.rootClick}>
+                <defs>
+                    {filters}
+                </defs>
+                {paths}
+            </g>
+        </svg>;
     }
 }

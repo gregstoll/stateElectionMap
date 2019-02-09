@@ -9,6 +9,7 @@ import Chart from 'chart.js';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
+import { isNullOrUndefined } from 'util';
 
 ReactChartkick.addAdapter(Chart);
 
@@ -103,10 +104,46 @@ class App extends Component<{}, AppState> {
         this.setState({ selectedStateCode: stateCode });
     }
 
+    onStateCleared = () => {
+        this.setState({ selectedStateCode: undefined });
+    }
+
+    setStateFromHash = () => {
+        if (location.hash.length > 1) {
+            let hashPartsArray = location.hash.substr(1).split('&').map(x => x.split('='));
+            let hashParts = new Map<string, string>();
+            for (let i = 0; i < hashPartsArray.length; ++i) {
+                hashParts.set(hashPartsArray[i][0], hashPartsArray[i][1]);
+            }
+            let newState = {};
+            if (hashParts.has("year")) {
+                let newYear = parseInt(hashParts.get("year"), 10);
+                if (!isNullOrUndefined(newYear) && !isNaN(newYear)) {
+                    if (newYear >= MIN_YEAR && newYear <= MAX_YEAR && ((newYear - MIN_YEAR) % YEAR_STEP === 0)) {
+                        newState['year'] = newYear;
+                    }
+                }
+            }
+            if (hashParts.has("state")) {
+                let stateCode = hashParts.get("state");
+            }
+        }
+    }
+
+    updateHash = () => {
+        let newHash = `#year=${this.state.year}`;
+        if (!isNullOrUndefined(this.state.selectedStateCode)) {
+            newHash += `&state=${this.state.selectedStateCode}`;
+        }
+        newHash += `&cartogram=${this.state.isCartogram ? 1 : 0}&actualResults=${this.state.rawResults ? 1 : 0}`;
+        window.location.hash = newHash;
+    }
+
     render = () => {
         if (!(this.state.stateInfos && this.state.year)) {
             return <div>Loading</div>;
         }
+        this.updateHash();
 
         let stateColors = new Map<string, string>();
         let stateTitles = new Map<string, string>();
@@ -122,7 +159,7 @@ class App extends Component<{}, AppState> {
                 // TODO - duplication or something
                 let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
                 stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
-                stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage));
+                stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage) + "\n" + (this.state.rawResults ? "Actual results" : "Relative to popular vote"));
             }
         }
 
@@ -195,16 +232,15 @@ class App extends Component<{}, AppState> {
         // https://react-component.github.io/slider/examples/slider.html
         return (
             <div className="App">
-                <svg width="900" height="500">
-                    <StateMap isCartogram={this.state.isCartogram}
-                        stateColors={stateColors}
-                        stateTitles={stateTitles}
-                        stateSelectedCallback={this.onStateSelected}
-                        x={0}
-                        y={0}
-                        width={500}
-                        height={500} />
-                </svg>
+                <StateMap isCartogram={this.state.isCartogram}
+                    stateColors={stateColors}
+                    stateTitles={stateTitles}
+                    stateSelectedCallback={this.onStateSelected}
+                    stateClearedCallback={this.onStateCleared}
+                    x={0}
+                    y={0}
+                    width={900}
+                    height={500} />
                 <div>
                     <Button.Group>
                         <Button active={this.state.rawResults} onClick={() => this.setState({ rawResults: true })}>Actual results</Button>
