@@ -22,7 +22,6 @@ interface StateMapProps {
 };
 
 interface StateMapDrawingInfo {
-    //TODO - figure out this type and use it everywhere
     usTopoJson: any,
     cartogram: d3.Selection<HTMLElement, () => any, null, undefined>,
     stateInfos: StateInfos
