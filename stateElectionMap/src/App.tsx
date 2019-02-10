@@ -284,7 +284,6 @@ class App extends Component<{}, AppState> {
                 </div>;
         }
 
-        // https://react-component.github.io/slider/examples/slider.html
         return (
             <div className="App">
                 <StateMap isCartogram={this.state.isCartogram}
