@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import { Button, Select } from 'semantic-ui-react';
 import _ from 'lodash';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
@@ -33,7 +33,8 @@ export class MapDate {
 }
 
 interface MapDateSliderState {
-    isPlaying: boolean
+    isPlaying: boolean,
+    playSpeed: number
 }
 
 export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderState> {
@@ -43,7 +44,7 @@ export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderSt
             console.error("Exactly one of MapDateSlider's ticksPerYear and yearsPerTick should be defined!");
             throw "Exactly one of MapDateSlider's ticksPerYear and yearsPerTick should be defined!";
         }
-        this.state = { isPlaying: false };
+        this.state = { isPlaying: false, playSpeed: MapDateSlider.speedOptions()[2].value };
     }
 
     monthChangePerTick() {
@@ -83,8 +84,7 @@ export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderSt
         this.callAdvanceDateInFuture();
     }
     callAdvanceDateInFuture = () => {
-        //TODO - setting for speed
-        setTimeout(this.advanceDate, 500);
+        setTimeout(this.advanceDate, this.state.playSpeed);
     }
     sliderAtEnd(): boolean {
         return this.props.currentDate.equals(this.props.endDate);
@@ -100,6 +100,19 @@ export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderSt
             this.callAdvanceDateInFuture();
         }
     }
+
+    static speedOptions() {
+        return [{ key: 'verySlow', value: 2500, text: "Very slow" },
+            { key: 'slow', value: 1250, text: "Slow" },
+            { key: 'normal', value: 500, text: "Normal" },
+            { key: 'fast', value: 250, text: "Fast" },
+            { key: 'veryFast', value: 0, text: "Very fast" }];
+    }
+
+    changeSpeed = (event, { value } ) => {
+        this.setState({ playSpeed: value });
+    }
+
     render() {
         // https://react-component.github.io/slider/examples/slider.html
         return (
@@ -107,6 +120,7 @@ export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderSt
                 <Slider min={0} max={this.mapDateToSliderIndex(this.props.endDate)} step={1} value={this.mapDateToSliderIndex(this.props.currentDate)} onChange={this.onSliderChange} />
                 <div>
                     <Button onClick={() => this.clickStopPlayButton()}>{this.state.isPlaying ? "Stop" : "Play"}</Button>
+                    Speed: <Select options={MapDateSlider.speedOptions()} value={this.state.playSpeed} onChange={this.changeSpeed} />
                 </div>
             </div>
         );
