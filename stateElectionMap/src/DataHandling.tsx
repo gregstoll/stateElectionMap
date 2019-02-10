@@ -72,7 +72,6 @@ function validateData(year: number, stateData: ElectionStateResult): void {
 }
 
 export const loadAllData = async (): Promise<DataCollection> => {
-    //TODO error handling
     let stateNamesPromise = d3.tsv('data/us-state-names.tsv', cleanStateName);
     let electionDataPromises = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
@@ -95,6 +94,10 @@ export const loadAllData = async (): Promise<DataCollection> => {
         electionData.set(year, electionYearData);
     }
     let stateNames = await stateNamesPromise;
+    // Weird way to check for errors
+    if (stateNames.columns.length != 3) {
+        throw "Failed to load state names data!";
+    }
     return {
         stateInfos: makeStateInfos(stateNames),
         electionData: electionData

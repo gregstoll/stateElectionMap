@@ -21,6 +21,7 @@ interface AppState {
     stateInfos: StateInfos,
     electionData: ElectionData,
     haveUpdatedFromHash: boolean,
+    loadError: string
 }
 
 class App extends Component<{}, AppState> {
@@ -31,11 +32,12 @@ class App extends Component<{}, AppState> {
         rawResults: true,
         stateInfos: null,
         electionData: null,
-        haveUpdatedFromHash: false
+        haveUpdatedFromHash: false,
+        loadError: undefined
     };
 
     updateInitialStateFromHash() {
-        if (this.dataHasLoaded(this.state) && !this.state.haveUpdatedFromHash) {
+        if (this.dataHasLoaded() && !this.state.haveUpdatedFromHash) {
             this.setStateFromHash();
         }
     }
@@ -55,7 +57,8 @@ class App extends Component<{}, AppState> {
             data = await loadAllData();
         }
         catch (error) {
-            alert("ERROR loading data: " + error);
+            this.setState({ loadError: "Error loading data: " + error });
+            return;
         }
         let yearState = { year: _.max(Array.from(data.electionData.keys())) };
         this.setState(Object.assign(yearState, data));
@@ -181,13 +184,18 @@ class App extends Component<{}, AppState> {
         window.location.hash = newHash;
     }
 
-    dataHasLoaded = (state: AppState) => {
-        return state.stateInfos && state.year;
+    dataHasLoaded = () => {
+        return this.state.stateInfos && this.state.year;
     }
 
     render = () => {
-        if (!(this.dataHasLoaded(this.state))) {
-            return <div>Loading</div>;
+        if (!(this.dataHasLoaded())) {
+            if (isNullOrUndefined(this.state.loadError)) {
+                return <div className="App">Loading</div>;
+            }
+            else {
+                return <div className="App" style={{ backgroundColor: "red"}}>{this.state.loadError}</div>;
+            }
         }
         if (this.state.haveUpdatedFromHash) {
             this.updateHash();
