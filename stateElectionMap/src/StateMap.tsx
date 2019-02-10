@@ -18,7 +18,8 @@ interface StateMapProps {
     x: number,
     y: number,
     width: number,
-    height: number
+    height: number,
+    onError: (error: any) => void
 };
 
 interface StateMapDrawingInfo {
@@ -58,9 +59,13 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
     }
 
     private loadAllData(): void {
-        //TODO error handling
         this.getDataAsync().then(value => {
             this.setState({ drawingInfo: value });
+        }).catch(error => {
+            console.error("Error in StateMap: " + error);
+            if (this.props.onError) {
+                this.props.onError(error);
+            }
         });
     }
 

@@ -10,6 +10,7 @@ import Chart from 'chart.js';
 import 'rc-slider/assets/index.css';
 import './App.css';
 import { isNullOrUndefined } from 'util';
+import { string } from 'prop-types';
 
 ReactChartkick.addAdapter(Chart);
 
@@ -49,6 +50,18 @@ class App extends Component<{}, AppState> {
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         this.updateInitialStateFromHash();
+    }
+
+    static getDerivedStateFromError(error) {
+        return { loadError: error };
+    }
+
+    componentDidCatch(error, info) {
+        this.setState({ loadError: error });
+    }
+
+    onMapError = (error) => {
+        this.setState({ loadError: "Error loading map: " + this.errorStringFromError(error) });
     }
 
     async loadDataAsync() {
@@ -188,14 +201,20 @@ class App extends Component<{}, AppState> {
         return this.state.stateInfos && this.state.year;
     }
 
+    errorStringFromError = (error: any) => {
+        // JS exceptions have this
+        if (error.hasOwnProperty("message")) {
+            return error.message;
+        }
+        return error;
+    }
+
     render = () => {
+        if (!isNullOrUndefined(this.state.loadError)) {
+            return <div className="App" style={{ backgroundColor: "red"}}>{this.errorStringFromError(this.state.loadError)}</div>;
+        }
         if (!(this.dataHasLoaded())) {
-            if (isNullOrUndefined(this.state.loadError)) {
-                return <div className="App">Loading</div>;
-            }
-            else {
-                return <div className="App" style={{ backgroundColor: "red"}}>{this.state.loadError}</div>;
-            }
+            return <div className="App">Loading</div>;
         }
         if (this.state.haveUpdatedFromHash) {
             this.updateHash();
@@ -294,7 +313,8 @@ class App extends Component<{}, AppState> {
                     x={0}
                     y={0}
                     width={900}
-                    height={500} />
+                    height={500}
+                    onError={this.onMapError} />
                 <div>
                     <Button.Group>
                         <Button active={this.state.rawResults} onClick={() => this.setState({ rawResults: true })}>Actual results</Button>
