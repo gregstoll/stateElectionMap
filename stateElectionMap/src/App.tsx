@@ -34,12 +34,29 @@ class App extends Component<{}, AppState> {
         haveUpdatedFromHash: false
     };
 
+    updateInitialStateFromHash() {
+        if (this.dataHasLoaded(this.state) && !this.state.haveUpdatedFromHash) {
+            this.setStateFromHash();
+        }
+    }
+
     componentDidMount() {
         this.loadDataAsync();
+        this.updateInitialStateFromHash();
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        this.updateInitialStateFromHash();
     }
 
     async loadDataAsync() {
-        let data: DataCollection = await loadAllData();
+        let data: DataCollection;
+        try {
+            data = await loadAllData();
+        }
+        catch (error) {
+            alert("ERROR loading data: " + error);
+        }
         let yearState = { year: _.max(Array.from(data.electionData.keys())) };
         this.setState(Object.assign(yearState, data));
     }
@@ -164,15 +181,16 @@ class App extends Component<{}, AppState> {
         window.location.hash = newHash;
     }
 
+    dataHasLoaded = (state: AppState) => {
+        return state.stateInfos && state.year;
+    }
+
     render = () => {
-        if (!(this.state.stateInfos && this.state.year)) {
+        if (!(this.dataHasLoaded(this.state))) {
             return <div>Loading</div>;
         }
         if (this.state.haveUpdatedFromHash) {
             this.updateHash();
-        }
-        else {
-            this.setStateFromHash();
         }
 
         let stateColors = new Map<string, string>();
