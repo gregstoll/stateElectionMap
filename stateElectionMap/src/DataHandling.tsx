@@ -126,7 +126,7 @@ function setNationalDAdvantage(electionYearData: ElectionYearData) {
     let a = Array.from(electionYearData.stateResults.entries());
     for (let [key, value] of a) {
         //for (let entry of Array.from(electionData.entries())) {
-        //TODO ugh this is so gross
+        //ugh this is so gross
         //for (let i = 0; i < values.length; ++i) {
         //const value = values[i];
         //let value = electionData[key];
