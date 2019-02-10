@@ -7,7 +7,6 @@ import { isUndefined } from 'util';
 
 export interface MapDateSliderProps {
     // Exactly one of this and yearsPerTick should be defined (the other should be undefined)
-    //TODO enforce this?
     ticksPerYear: number,
     // Exactly one of this and ticksPerYear should be defined (the other should be undefined)
     yearsPerTick: number,
@@ -40,6 +39,10 @@ interface MapDateSliderState {
 export class MapDateSlider extends Component<MapDateSliderProps, MapDateSliderState> {
     constructor(props) {
         super(props);
+        if ((this.props.ticksPerYear === undefined) == (this.props.yearsPerTick === undefined)) {
+            console.error("Exactly one of MapDateSlider's ticksPerYear and yearsPerTick should be defined!");
+            throw "Exactly one of MapDateSlider's ticksPerYear and yearsPerTick should be defined!";
+        }
         this.state = { isPlaying: false };
     }
 
