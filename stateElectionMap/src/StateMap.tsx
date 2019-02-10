@@ -70,17 +70,24 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
     }
 
     private async getDataAsync(): Promise<StateMapDrawingInfo> {
-        let usPromise = d3.json('data/us.json');
-        let stateNamesPromise = d3.tsv('data/us-state-names.tsv', this.cleanStateName);
-        let cartogramPromise = this.getCartogramAsync();
-        let us = await usPromise;
-        let stateNames = await stateNamesPromise;
-        let cartogram = await cartogramPromise;
-        return {
-            usTopoJson: us,
-            cartogram: cartogram,
-            stateInfos: this.makeStateInfos(stateNames)
-        };
+        try {
+            let usPromise = d3.json('data/us.json');
+            let stateNamesPromise = d3.tsv('data/us-state-names.tsv', this.cleanStateName);
+            let cartogramPromise = this.getCartogramAsync();
+            let us = await usPromise;
+            let stateNames = await stateNamesPromise;
+            let cartogram = await cartogramPromise;
+            return {
+                usTopoJson: us,
+                cartogram: cartogram,
+                stateInfos: this.makeStateInfos(stateNames)
+            };
+        } catch (error) {
+            console.error("Error in StateMap: " + error);
+            if (this.props.onError) {
+                this.props.onError(error);
+            }
+        }
     }
 
     private cleanStateName(d: any): StateName {
@@ -101,11 +108,16 @@ export class StateMap extends Component<StateMapProps, StateMapState>{
     }
 
     private async getCartogramAsync(): Promise<d3.Selection<HTMLElement, () => any, null, undefined>> {
-        const xml = await d3.xml('data/cartograms/fivethirtyeight.svg', { headers: new Headers({ "Content-Type": "image/svg+xml" }) });
-        //TODO error handling
-        return d3.select(xml.documentElement);
+        try {
+            const xml = await d3.xml('data/cartograms/fivethirtyeight.svg', { headers: new Headers({ "Content-Type": "image/svg+xml" }) });
+            return d3.select(xml.documentElement);
+        } catch (error) {
+            console.error("Error in StateMap cartogram: " + error);
+            if (this.props.onError) {
+                this.props.onError(error);
+            }
+        }
     };
-
 
     initLabelLines() {
         this.labelLines = new Map<string, StateLineInfo>();
