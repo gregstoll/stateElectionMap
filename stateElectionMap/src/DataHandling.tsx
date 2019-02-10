@@ -91,6 +91,9 @@ export const loadAllData = async (): Promise<DataCollection> => {
             electionYearData.stateResults.set(stateResult.stateCode, stateResult);
         });
         setNationalDAdvantage(electionYearData);
+        if (electionYearData.stateResults.size != 51) {
+            throw "Invalid data for year " + year;
+        }
         electionData.set(year, electionYearData);
     }
     let stateNames = await stateNamesPromise;
