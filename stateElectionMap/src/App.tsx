@@ -253,8 +253,8 @@ class App extends Component<{}, AppState> {
             min = Math.floor(min / 5) * 5;
             max = Math.ceil(max / 5) * 5;
             let stateNameObj = this.state.stateInfos.codeToStateName.get(this.state.selectedStateCode);
-            let yMin = Math.min(-2, min);
-            let yMax = Math.max(2, max);
+            //let yMin = Math.min(0, min);
+            //let yMax = Math.max(0, max);
             lineChart = <div style={{ width: 500 }} className="centerFixedWidth">{stateNameObj.name}
                 <LineChart width={500} height={300}
                     data={[{ "name": "margin", "data": data }]}
@@ -321,13 +321,15 @@ class App extends Component<{}, AppState> {
                         <Button.Or />
                         <Button active={!this.state.rawResults} onClick={() => this.setState({ rawResults: false })}>Relative to popular vote</Button>
                     </Button.Group>
-                    <div>Year {this.state.year} Popular vote: {this.textFromDAdvantage(nationalDAdvantage)}</div>
+                </div>
+                <div style={{ marginTop: "5px" }}>
                     <Button.Group>
                         <Button active={!this.state.isCartogram} onClick={() => this.setState({ isCartogram: false })}>Normal</Button>
                         <Button.Or />
                         <Button active={this.state.isCartogram} onClick={() => this.setState({ isCartogram: true })}>Cartogram</Button>
                     </Button.Group>
                 </div>
+                <div>Year <b>{this.state.year}</b> Popular vote: <b>{this.textFromDAdvantage(nationalDAdvantage)}</b></div>
                 <div style={{ width: 500 }} className="centerFixedWidth">
                     <MapDateSlider
                         yearsPerTick={YEAR_STEP}
