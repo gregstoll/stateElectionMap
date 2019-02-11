@@ -73,7 +73,7 @@ class App extends Component<{}, AppState> {
             this.setState({ loadError: "Error loading data: " + error });
             return;
         }
-        let yearState = { year: _.max(Array.from(data.electionData.keys())) };
+        let yearState = { year: MAX_YEAR };
         this.setState(Object.assign(yearState, data));
     }
 
@@ -188,12 +188,22 @@ class App extends Component<{}, AppState> {
         this.setState({ haveUpdatedFromHash: true });
     }
 
-    updateHash = () => {
-        let newHash = `#year=${this.state.year}`;
-        if (!isNullOrUndefined(this.state.selectedStateCode)) {
-            newHash += `&state=${this.state.selectedStateCode}`;
+    static _appendToHash(hash: string, toAppend: string) {
+        if (isNullOrUndefined(hash)) {
+            return '#' + toAppend;
         }
-        newHash += `&cartogram=${this.state.isCartogram ? 1 : 0}&actualResults=${this.state.rawResults ? 1 : 0}`;
+        return hash + '&' + toAppend;
+    }
+
+    updateHash = () => {
+        let newHash = undefined;
+        if (this.state.year != MAX_YEAR) {
+            newHash = App._appendToHash(newHash, `year=${this.state.year}`);
+        }
+        if (!isNullOrUndefined(this.state.selectedStateCode)) {
+            newHash = App._appendToHash(newHash, `state=${this.state.selectedStateCode}`);
+        }
+        newHash = App._appendToHash(newHash, `cartogram=${this.state.isCartogram ? 1 : 0}&actualResults=${this.state.rawResults ? 1 : 0}`);
         window.location.hash = newHash;
     }
 
