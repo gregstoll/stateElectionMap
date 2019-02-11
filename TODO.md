@@ -1,6 +1,5 @@
 - writeup
 - UI cleanup
-- code TODOs
 
 
 --
