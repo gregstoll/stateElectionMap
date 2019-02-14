@@ -1,0 +1,2 @@
+npm run build - do production build
+ - make sure to chmod +x public/index.html
