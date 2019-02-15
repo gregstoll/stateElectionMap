@@ -23,7 +23,7 @@ export class MapDate {
     constructor(year: number, endMonth: number) {
         this.year = year;
         if (endMonth < 0 || endMonth > 11) {
-            throw "endMonth is out of range (must be >= 0 and < 12, got " + endMonth;
+            throw `endMonth is out of range (must be >= 0 and < 12, got ${endMonth})`;
         }
         this.endMonth = endMonth;
     }
