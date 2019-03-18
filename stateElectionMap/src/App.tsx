@@ -3,7 +3,7 @@ import { StateMap } from './StateMap';
 import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
-import { MapDateSlider, MapDate } from './MapDateSlider';
+import { DateSlider, DateRange } from 'us-state-map';
 import ReactChartkick, { LineChart } from 'react-chartkick';
 import Chart from 'chart.js';
 
@@ -131,7 +131,7 @@ class App extends Component<{}, AppState> {
         return "Even";
     }
 
-    onSliderDateChange = (date: MapDate) => {
+    onSliderDateChange = (date: DateRange) => {
         this.setState({ year: date.year });
     }
 
@@ -341,12 +341,12 @@ class App extends Component<{}, AppState> {
                 </div>
                 <div>Year <b>{this.state.year}</b> Popular vote: <b>{this.textFromDAdvantage(nationalDAdvantage)}</b></div>
                 <div style={{ width: 500 }} className="centerFixedWidth">
-                    <MapDateSlider
+                    <DateSlider
                         yearsPerTick={YEAR_STEP}
                         ticksPerYear={undefined}
-                        startDate={new MapDate(MIN_YEAR, 11)}
-                        endDate={new MapDate(MAX_YEAR, 11)}
-                        currentDate={new MapDate(this.state.year, 11)}
+                        startDate={new DateRange(MIN_YEAR)}
+                        endDate={new DateRange(MAX_YEAR)}
+                        currentDate={new DateRange(this.state.year)}
                         onDateChange={this.onSliderDateChange}/>
                 </div>
                 {lineChart}
