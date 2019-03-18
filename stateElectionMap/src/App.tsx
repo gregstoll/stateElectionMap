@@ -10,7 +10,6 @@ import Chart from 'chart.js';
 import 'rc-slider/assets/index.css';
 import './App.css';
 import { isNullOrUndefined } from 'util';
-import { string } from 'prop-types';
 
 ReactChartkick.addAdapter(Chart);
 
