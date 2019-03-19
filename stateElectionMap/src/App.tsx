@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
-import { StateMap } from './StateMap';
 import { Button } from 'semantic-ui-react';
 import _ from 'lodash';
 import { loadAllData, DataCollection, StateName, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
-import { DateSlider, DateRange } from 'us-state-map';
+import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
 import ReactChartkick, { LineChart } from 'react-chartkick';
 import Chart from 'chart.js';
 
@@ -130,7 +129,7 @@ class App extends Component<{}, AppState> {
         return "Even";
     }
 
-    onSliderDateChange = (date: DateRange) => {
+    onSliderDateChange = (date: TickDateRange) => {
         this.setState({ year: date.year });
     }
 
@@ -314,7 +313,7 @@ class App extends Component<{}, AppState> {
 
         return (
             <div className="App">
-                <StateMap isCartogram={this.state.isCartogram}
+                <USStateMap isCartogram={this.state.isCartogram}
                     stateColors={stateColors}
                     stateTitles={stateTitles}
                     stateSelectedCallback={this.onStateSelected}
@@ -343,9 +342,9 @@ class App extends Component<{}, AppState> {
                     <DateSlider
                         yearsPerTick={YEAR_STEP}
                         ticksPerYear={undefined}
-                        startDate={new DateRange(MIN_YEAR)}
-                        endDate={new DateRange(MAX_YEAR)}
-                        currentDate={new DateRange(this.state.year)}
+                        startDate={new TickDateRange(MIN_YEAR)}
+                        endDate={new TickDateRange(MAX_YEAR)}
+                        currentDate={new TickDateRange(this.state.year)}
                         onDateChange={this.onSliderDateChange}/>
                 </div>
                 {lineChart}
