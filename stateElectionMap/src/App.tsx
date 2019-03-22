@@ -1,9 +1,10 @@
-import React, { Component } from 'react';
+import * as React from 'react';
 import { Button } from 'semantic-ui-react';
-import _ from 'lodash';
-import { loadAllData, DataCollection, StateName, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
+import * as _ from 'lodash';
+import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
-import ReactChartkick, { LineChart } from 'react-chartkick';
+import { LineChart } from 'react-chartkick';
+import ReactChartkick from 'react-chartkick';
 import Chart from 'chart.js';
 
 import 'rc-slider/assets/index.css';
@@ -23,7 +24,7 @@ interface AppState {
     loadError: string
 }
 
-class App extends Component<{}, AppState> {
+class App extends React.Component<{}, AppState> {
     state: AppState = {
         year: 0,
         selectedStateCode: undefined,
@@ -130,7 +131,7 @@ class App extends Component<{}, AppState> {
     }
 
     onSliderDateChange = (date: TickDateRange) => {
-        this.setState({ year: date.year });
+        this.setState({ year: date.endYear });
     }
 
     onStateSelected = (stateCode) => {
@@ -341,11 +342,10 @@ class App extends Component<{}, AppState> {
                 <div style={{ width: 500 }} className="centerFixedWidth">
                     <DateSlider
                         yearsPerTick={YEAR_STEP}
-                        ticksPerYear={undefined}
-                        startDate={new TickDateRange(MIN_YEAR)}
-                        endDate={new TickDateRange(MAX_YEAR)}
-                        currentDate={new TickDateRange(this.state.year)}
-                        onDateChange={this.onSliderDateChange}/>
+                        startTickDateRange={new TickDateRange(MIN_YEAR)}
+                        endTickDateRange={new TickDateRange(MAX_YEAR)}
+                        currentTickDateRange={new TickDateRange(this.state.year)}
+                        onTickDateRangeChange={this.onSliderDateChange} />
                 </div>
                 {lineChart}
             </div>
