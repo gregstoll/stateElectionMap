@@ -1,16 +1,15 @@
-import React, { Component } from 'react';
-import { StateMap } from './StateMap';
+import * as React from 'react';
 import { Button } from 'semantic-ui-react';
-import _ from 'lodash';
-import { loadAllData, DataCollection, StateName, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
-import { MapDateSlider, MapDate } from './MapDateSlider';
-import ReactChartkick, { LineChart } from 'react-chartkick';
+import * as _ from 'lodash';
+import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
+import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
+import { LineChart } from 'react-chartkick';
+import ReactChartkick from 'react-chartkick';
 import Chart from 'chart.js';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
 import { isNullOrUndefined } from 'util';
-import { string } from 'prop-types';
 
 ReactChartkick.addAdapter(Chart);
 
@@ -25,7 +24,7 @@ interface AppState {
     loadError: string
 }
 
-class App extends Component<{}, AppState> {
+class App extends React.Component<{}, AppState> {
     state: AppState = {
         year: 0,
         selectedStateCode: undefined,
@@ -131,8 +130,8 @@ class App extends Component<{}, AppState> {
         return "Even";
     }
 
-    onSliderDateChange = (date: MapDate) => {
-        this.setState({ year: date.year });
+    onSliderDateChange = (date: TickDateRange) => {
+        this.setState({ year: date.endYear });
     }
 
     onStateSelected = (stateCode) => {
@@ -315,7 +314,7 @@ class App extends Component<{}, AppState> {
 
         return (
             <div className="App">
-                <StateMap isCartogram={this.state.isCartogram}
+                <USStateMap isCartogram={this.state.isCartogram}
                     stateColors={stateColors}
                     stateTitles={stateTitles}
                     stateSelectedCallback={this.onStateSelected}
@@ -341,13 +340,12 @@ class App extends Component<{}, AppState> {
                 </div>
                 <div>Year <b>{this.state.year}</b> Popular vote: <b>{this.textFromDAdvantage(nationalDAdvantage)}</b></div>
                 <div style={{ width: 500 }} className="centerFixedWidth">
-                    <MapDateSlider
+                    <DateSlider
                         yearsPerTick={YEAR_STEP}
-                        ticksPerYear={undefined}
-                        startDate={new MapDate(MIN_YEAR, 11)}
-                        endDate={new MapDate(MAX_YEAR, 11)}
-                        currentDate={new MapDate(this.state.year, 11)}
-                        onDateChange={this.onSliderDateChange}/>
+                        startTickDateRange={new TickDateRange(MIN_YEAR)}
+                        endTickDateRange={new TickDateRange(MAX_YEAR)}
+                        currentTickDateRange={new TickDateRange(this.state.year)}
+                        onTickDateRangeChange={this.onSliderDateChange} />
                 </div>
                 {lineChart}
             </div>
