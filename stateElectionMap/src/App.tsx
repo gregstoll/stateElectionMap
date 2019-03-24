@@ -319,8 +319,6 @@ class App extends React.Component<{}, AppState> {
                     stateTitles={stateTitles}
                     stateSelectedCallback={this.onStateSelected}
                     stateClearedCallback={this.onStateCleared}
-                    x={0}
-                    y={0}
                     width={900}
                     height={500}
                     onError={this.onMapError} />
