@@ -9,7 +9,6 @@ import Chart from 'chart.js';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
-import { isNullOrUndefined } from 'util';
 
 ReactChartkick.addAdapter(Chart);
 
@@ -152,7 +151,7 @@ class App extends React.Component<{}, AppState> {
             let newState = {};
             if (hashParts.has("year")) {
                 let newYear = parseInt(hashParts.get("year"), 10);
-                if (!isNullOrUndefined(newYear) && !isNaN(newYear)) {
+                if (newYear !== null && newYear !== undefined && !isNaN(newYear)) {
                     if (newYear >= MIN_YEAR && newYear <= MAX_YEAR && ((newYear - MIN_YEAR) % YEAR_STEP === 0)) {
                         newState['year'] = newYear;
                     }
@@ -188,7 +187,7 @@ class App extends React.Component<{}, AppState> {
     }
 
     static _appendToHash(hash: string, toAppend: string) {
-        if (isNullOrUndefined(hash)) {
+        if (hash === null || hash === undefined) {
             return '#' + toAppend;
         }
         return hash + '&' + toAppend;
@@ -199,7 +198,7 @@ class App extends React.Component<{}, AppState> {
         if (this.state.year != MAX_YEAR) {
             newHash = App._appendToHash(newHash, `year=${this.state.year}`);
         }
-        if (!isNullOrUndefined(this.state.selectedStateCode)) {
+        if (this.state.selectedStateCode !== null && this.state.selectedStateCode !== undefined) {
             newHash = App._appendToHash(newHash, `state=${this.state.selectedStateCode}`);
         }
         newHash = App._appendToHash(newHash, `cartogram=${this.state.isCartogram ? 1 : 0}&actualResults=${this.state.rawResults ? 1 : 0}`);
@@ -219,7 +218,7 @@ class App extends React.Component<{}, AppState> {
     }
 
     render = () => {
-        if (!isNullOrUndefined(this.state.loadError)) {
+        if (this.state.loadError !== undefined) {
             return <div className="App" style={{ backgroundColor: "red"}}>{this.errorStringFromError(this.state.loadError)}</div>;
         }
         if (!(this.dataHasLoaded())) {
