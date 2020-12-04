@@ -19,6 +19,7 @@ interface AppState {
     isCartogram: boolean,
     stateInfos: StateInfos,
     electionData: ElectionData,
+    electoralVoteData: Array<[number, Map<string, number>]>,
     haveUpdatedFromHash: boolean,
     loadError: string
 }
@@ -31,6 +32,7 @@ class App extends React.Component<{}, AppState> {
         rawResults: true,
         stateInfos: null,
         electionData: null,
+        electoralVoteData: null,
         haveUpdatedFromHash: false,
         loadError: undefined
     };
