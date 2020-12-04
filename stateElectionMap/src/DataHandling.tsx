@@ -38,9 +38,17 @@ const cleanElectionResults = (d: any): ElectionStateResult => {
     };
 };
 
+const cleanElectoralVoteResults = (d: any): [string, number] => {
+    return [d[""], Number(d["Electoral votes"])];
+};
+
 export const MIN_YEAR = 1972;
 export const MAX_YEAR = 2016;
 export const YEAR_STEP = 4;
+
+const MIN_ELECTORAL_VOTE_YEAR = 1971;
+const MAX_ELECTORAL_VOTE_YEAR = 1971;
+const ELECTORAL_VOTE_YEAR_STEP = 10;
 
 export type ElectionData = Map<number, ElectionYearData>;
 
@@ -51,7 +59,8 @@ export interface ElectionYearData {
 
 export interface DataCollection {
     stateInfos: StateInfos,
-    electionData: ElectionData
+    electionData: ElectionData,
+    electoralVoteData: Array<[number, Map<string, number>]>
 };
 
 function validateData(year: number, stateData: ElectionStateResult): void {
@@ -71,8 +80,16 @@ function validateData(year: number, stateData: ElectionStateResult): void {
     }
 }
 
+//TODO - write tests for this method
 export const loadAllData = async (): Promise<DataCollection> => {
     let stateNamesPromise = d3.tsv('data/us-state-names.tsv', cleanStateName);
+    const stateNames = await stateNamesPromise;
+    // Weird way to check for errors
+    if (stateNames.columns.length != 3) {
+        throw "Failed to load state names data!";
+    }
+    const stateInfos = makeStateInfos(stateNames);
+
     let electionDataPromises = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
         electionDataPromises[year] = d3.csv('data/electionResults/' + year + '.csv', cleanElectionResults);
@@ -84,6 +101,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
             stateResults: new Map<string, ElectionStateResult>(),
             nationalDAdvantage: undefined
         };
+        // TODO - check state codes
         data.forEach(stateResult => {
             if (VALIDATE_DATA) {
                 validateData(year, stateResult);
@@ -96,14 +114,28 @@ export const loadAllData = async (): Promise<DataCollection> => {
         }
         electionData.set(year, electionYearData);
     }
-    let stateNames = await stateNamesPromise;
-    // Weird way to check for errors
-    if (stateNames.columns.length != 3) {
-        throw "Failed to load state names data!";
+    let electoralVotePromises = {};
+    for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
+        electoralVotePromises[year] = d3.csv('data/electoralVotes/' + year + '.csv', cleanElectoralVoteResults);
+    }
+    //electoralVoteData: Array<[number, Map<string, number>]>
+    let electoralVoteData : Array<[number, Map<string, number>]> = [];
+    for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
+        let data : [string, number][] = await electoralVotePromises[year];
+        //TODO - check state codes
+        let yearVoteData = new Map<string, number>();
+        data.forEach(stateVotes => {
+            if (VALIDATE_DATA) {
+                //TODO
+            }
+            yearVoteData.set(stateVotes[0], stateVotes[1]);
+        });
+        electoralVoteData.push([year, yearVoteData]);
     }
     return {
-        stateInfos: makeStateInfos(stateNames),
-        electionData: electionData
+        stateInfos: stateInfos,
+        electionData: electionData,
+        electoralVoteData: electoralVoteData
     };
 };
 
