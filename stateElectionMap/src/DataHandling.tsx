@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import _ from 'lodash';
 
-const VALIDATE_DATA = false;
+const VALIDATE_DATA = process.env.NODE_ENV !== "production";
 
 export interface StateName {
     code: string,
@@ -39,7 +39,7 @@ const cleanElectionResults = (d: any): ElectionStateResult => {
 };
 
 const cleanElectoralVoteResults = (d: any): [string, number] => {
-    return [d[""], Number(d["Electoral votes"])];
+    return [d[""], Number(d["Electoral Votes"].replace(/,/g, ''))];
 };
 
 export const MIN_YEAR = 1972;
@@ -63,7 +63,10 @@ export interface DataCollection {
     electoralVoteData: Array<[number, Map<string, number>]>
 };
 
-function validateData(year: number, stateData: ElectionStateResult): void {
+function validateData(year: number, stateData: ElectionStateResult, stateInfos: StateInfos): void {
+    if (!stateInfos.codeToStateName.has(stateData.stateCode)) {
+        alert(`invalid state code: ${year} ${stateData.stateCode}`);
+    }
     if (stateData.dCount + stateData.rCount > stateData.totalCount) {
         alert(`total is too low: ${year} ${stateData.stateCode}`);
     }
@@ -77,6 +80,15 @@ function validateData(year: number, stateData: ElectionStateResult): void {
     }
     if (stateData.rCount > 10 * stateData.dCount) {
         alert(`too many r's: ${year} ${stateData.stateCode}`);
+    }
+}
+
+function validateElectoralData(year: number, stateVotes: [string, number], stateInfos: StateInfos): void {
+    if (!stateInfos.codeToStateName.has(stateVotes[0])) {
+        alert(`invalid state code: ${year} ${stateVotes[0]}`);
+    }
+    if (!(stateVotes[1] > 0 && stateVotes[1] < 70)) {
+        alert(`invalid number of votes: ${year} ${stateVotes[0]} ${stateVotes[1]}`);
     }
 }
 
@@ -101,10 +113,9 @@ export const loadAllData = async (): Promise<DataCollection> => {
             stateResults: new Map<string, ElectionStateResult>(),
             nationalDAdvantage: undefined
         };
-        // TODO - check state codes
         data.forEach(stateResult => {
             if (VALIDATE_DATA) {
-                validateData(year, stateResult);
+                validateData(year, stateResult, stateInfos);
             }
             electionYearData.stateResults.set(stateResult.stateCode, stateResult);
         });
@@ -118,18 +129,27 @@ export const loadAllData = async (): Promise<DataCollection> => {
     for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
         electoralVotePromises[year] = d3.csv('data/electoralVotes/' + year + '.csv', cleanElectoralVoteResults);
     }
-    //electoralVoteData: Array<[number, Map<string, number>]>
     let electoralVoteData : Array<[number, Map<string, number>]> = [];
     for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
         let data : [string, number][] = await electoralVotePromises[year];
-        //TODO - check state codes
         let yearVoteData = new Map<string, number>();
+        let totalElectoralVotes = 0;
         data.forEach(stateVotes => {
             if (VALIDATE_DATA) {
-                //TODO
+                validateElectoralData(year, stateVotes, stateInfos);
             }
             yearVoteData.set(stateVotes[0], stateVotes[1]);
+            totalElectoralVotes += stateVotes[1];
         });
+        if (yearVoteData.size != 51) {
+            throw "Invalid electoral data for year " + year;
+        }
+        // This can vary between years, but for all our data 538 is the right number
+        if (VALIDATE_DATA) {
+            if (totalElectoralVotes != 538) {
+                alert(`Wrong number of electoral votes ${year} ${totalElectoralVotes}`);
+            }
+        }
         electoralVoteData.push([year, yearVoteData]);
     }
     return {
