@@ -74,9 +74,9 @@ function validateData(year: number, stateData: ElectionStateResult, stateInfos: 
         alert(`too many third-party votes ${year} ${stateData.stateCode}`);
     }
     if (stateData.dCount > 10 * stateData.rCount) {
-        if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {
+        /*if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {*/
             alert(`too many d's: ${year} ${stateData.stateCode}`);
-        }
+        /*}*/
     }
     if (stateData.rCount > 10 * stateData.dCount) {
         alert(`too many r's: ${year} ${stateData.stateCode}`);
