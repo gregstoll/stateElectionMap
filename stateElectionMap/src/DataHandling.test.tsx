@@ -15,7 +15,8 @@ test('calculate electoral votes correctly', async () => {
     const data = await loadAllData();
     const knownTXValues : Array<[number, number]> = [[1972, 26], [1976, 26], [1980, 26], [1984, 29], [1988, 29], [1992, 32], [1996, 32], [2000, 32], [2004, 34], [2008, 34], [2012, 38], [2016, 38], [2020, 38]];
     for (let [year, evs] of knownTXValues) {
-        expect(ElectoralVoteDataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year)).toBe(evs);
+        const actualEvs = ElectoralVoteDataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year);
+        expect([year, actualEvs]).toStrictEqual([year, evs]);
     }
 });
 
