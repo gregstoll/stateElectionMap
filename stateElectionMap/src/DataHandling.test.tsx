@@ -1,29 +1,38 @@
 import { loadAllData, DataCollection } from './DataHandling';
+import fs from "fs";
+import path from "path";
 
 test('data loads without alerts', async () => {
     jest.setTimeout(30000);
     setupFetchMock();
+    let alerts = [];
+    window.alert = s => alerts.push(s);
     const data = await loadAllData();
-    expect(data.stateInfos.codeToStateName.size).toBe(51);
+    if (alerts.length > 0) {
+        fail(`got ${alerts.length} alerts, first one is ${alerts[0]}`);
+    }
+    // sigh, there are territories in here
+    expect(data.stateInfos.codeToStateName.size).toBeGreaterThanOrEqual(51);
     //TODO more
 });
 
 function setupFetchMock() {
-   /*let fetchMock = {
-    open: jest.fn(),
-    setRequestHeader: jest.fn(),
-    onreadystatechange: jest.fn(),
-    send: jest.fn().mockImplementation(function() { this.onload(); }),
-    readyState: 4,
-    responseText: ",",
-    status: 200
-  }*/
-
   // @ts-ignore
-  window.fetch = (info, init) => {
+  window.fetch = async (info, init) => {
       const url = info;
-      console.log(url); // data/us-state-names.tsv
-      //TODO
-      return Promise.resolve(url);
+      const filePath = path.join(__dirname, "../public/", url);
+      //console.log(filePath); // data/us-state-names.tsv
+      // could probably do this in a promise or something
+      // This trim() call is annoying, but sometimes the files have leading spaces in the header?
+      const data : string = fs.readFileSync(filePath, "utf8").trim();
+      //console.log(data);
+      return Promise.resolve({
+          status: 200,
+          statusText: "OK",
+          type: "basic",
+          url: filePath,
+          redirected: false,
+          ok: true,
+          text: () => Promise.resolve(data)});
   }
 }

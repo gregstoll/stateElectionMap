@@ -28,10 +28,11 @@ export interface ElectionStateResult {
 };
 
 const cleanElectionResults = (d: any): ElectionStateResult => {
-    let dKey = _.find(Object.keys(d), key => key.endsWith("(D)"));
-    let rKey = _.find(Object.keys(d), key => key.endsWith("(R)"));
+    //console.log(d);
+    const dKey = _.find(Object.keys(d), key => key.endsWith("(D)"));
+    const rKey = _.find(Object.keys(d), key => key.endsWith("(R)"));
     return {
-        stateCode: d[""],
+        stateCode: d["State"],
         dCount: Number(d[dKey].replace(/,/g, '')),
         rCount: Number(d[rKey].replace(/,/g, '')),
         totalCount: Number(d["Total"].replace(/,/g, ''))
@@ -39,7 +40,7 @@ const cleanElectionResults = (d: any): ElectionStateResult => {
 };
 
 const cleanElectoralVoteResults = (d: any): [string, number] => {
-    return [d[""], Number(d["Electoral Votes"].replace(/,/g, ''))];
+    return [d["State"], Number(d["Electoral Votes"].replace(/,/g, ''))];
 };
 
 export const MIN_YEAR = 1972;
@@ -65,30 +66,30 @@ export interface DataCollection {
 
 function validateData(year: number, stateData: ElectionStateResult, stateInfos: StateInfos): void {
     if (!stateInfos.codeToStateName.has(stateData.stateCode)) {
-        alert(`invalid state code: ${year} ${stateData.stateCode}`);
+        throw `invalid state code: ${year} ${stateData.stateCode}`;
     }
     if (stateData.dCount + stateData.rCount > stateData.totalCount) {
-        alert(`total is too low: ${year} ${stateData.stateCode}`);
+        throw `total is too low: ${year} ${stateData.stateCode}`;
     }
     if ((stateData.rCount + stateData.dCount) * 2 < stateData.totalCount) {
-        alert(`too many third-party votes ${year} ${stateData.stateCode}`);
+        throw `too many third-party votes ${year} ${stateData.stateCode}`;
     }
     if (stateData.dCount > 10 * stateData.rCount) {
-        /*if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {*/
-            alert(`too many d's: ${year} ${stateData.stateCode}`);
-        /*}*/
+        if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {
+            throw `too many d's: ${year} ${stateData.stateCode}`;
+        }
     }
     if (stateData.rCount > 10 * stateData.dCount) {
-        alert(`too many r's: ${year} ${stateData.stateCode}`);
+        throw `too many r's: ${year} ${stateData.stateCode}`;
     }
 }
 
 function validateElectoralData(year: number, stateVotes: [string, number], stateInfos: StateInfos): void {
     if (!stateInfos.codeToStateName.has(stateVotes[0])) {
-        alert(`invalid state code: ${year} ${stateVotes[0]}`);
+        throw `invalid state code: ${year} ${stateVotes[0]}`;
     }
     if (!(stateVotes[1] > 0 && stateVotes[1] < 70)) {
-        alert(`invalid number of votes: ${year} ${stateVotes[0]} ${stateVotes[1]}`);
+        throw `invalid number of votes: ${year} ${stateVotes[0]} ${stateVotes[1]}`;
     }
 }
 
@@ -121,7 +122,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
         });
         setNationalDAdvantage(electionYearData);
         if (electionYearData.stateResults.size != 51) {
-            throw "Invalid data for year " + year;
+            throw `Invalid data for year ${year}, got ${electionYearData.stateResults.size} stateResults: ${Array.from(electionYearData.stateResults.keys())}`;
         }
         electionData.set(year, electionYearData);
     }
@@ -147,7 +148,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
         // This can vary between years, but for all our data 538 is the right number
         if (VALIDATE_DATA) {
             if (totalElectoralVotes != 538) {
-                alert(`Wrong number of electoral votes ${year} ${totalElectoralVotes}`);
+                throw `Wrong number of electoral votes ${year} ${totalElectoralVotes}`;
             }
         }
         electoralVoteData.push([year, yearVoteData]);
