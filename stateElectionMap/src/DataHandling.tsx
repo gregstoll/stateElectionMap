@@ -28,7 +28,6 @@ export interface ElectionStateResult {
 };
 
 const cleanElectionResults = (d: any): ElectionStateResult => {
-    //console.log(d);
     const dKey = _.find(Object.keys(d), key => key.endsWith("(D)"));
     const rKey = _.find(Object.keys(d), key => key.endsWith("(R)"));
     return {
