@@ -51,6 +51,7 @@ const MAX_ELECTORAL_VOTE_YEAR = 1971;
 const ELECTORAL_VOTE_YEAR_STEP = 10;
 
 export type ElectionData = Map<number, ElectionYearData>;
+export type ElectoralVoteData = Array<[number, Map<string, number>]>;
 
 export interface ElectionYearData {
     stateResults: Map<string, ElectionStateResult>,
@@ -60,8 +61,21 @@ export interface ElectionYearData {
 export interface DataCollection {
     stateInfos: StateInfos,
     electionData: ElectionData,
-    electoralVoteData: Array<[number, Map<string, number>]>
+    electoralVoteData: ElectoralVoteData
 };
+
+export class ElectoralVoteDataUtils {
+    public static getElectoralVotesForState(data: ElectoralVoteData, stateCode: string, year: number) {
+        if (year < data[0][0]) {
+            throw `Year ${year} is too early for data, which has earliest year ${data[0][0]}`;
+        }
+        let dataIndex = 0;
+        while ((dataIndex + 1) < data.length && data[dataIndex + 1][0] < year) {
+            dataIndex += 1;
+        }
+        return data[dataIndex][1].get(stateCode);
+    }
+}
 
 function validateData(year: number, stateData: ElectionStateResult, stateInfos: StateInfos): void {
     if (!stateInfos.codeToStateName.has(stateData.stateCode)) {
@@ -129,7 +143,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
     for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
         electoralVotePromises[year] = d3.csv('data/electoralVotes/' + year + '.csv', cleanElectoralVoteResults);
     }
-    let electoralVoteData : Array<[number, Map<string, number>]> = [];
+    let electoralVoteData : ElectoralVoteData = [];
     for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
         let data : [string, number][] = await electoralVotePromises[year];
         let yearVoteData = new Map<string, number>();

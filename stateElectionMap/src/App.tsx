@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button } from 'semantic-ui-react';
 import * as _ from 'lodash';
-import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
+import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
 import { LineChart } from 'react-chartkick';
 import ReactChartkick from 'react-chartkick';
@@ -19,7 +19,7 @@ interface AppState {
     isCartogram: boolean,
     stateInfos: StateInfos,
     electionData: ElectionData,
-    electoralVoteData: Array<[number, Map<string, number>]>,
+    electoralVoteData: ElectoralVoteData,
     haveUpdatedFromHash: boolean,
     loadError: string
 }

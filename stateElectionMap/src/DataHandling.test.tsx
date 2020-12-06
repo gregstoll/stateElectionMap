@@ -1,14 +1,24 @@
-import { loadAllData, DataCollection } from './DataHandling';
+import { loadAllData, DataCollection, ElectoralVoteDataUtils } from './DataHandling';
 import fs from "fs";
 import path from "path";
 
-test('data loads without alerts', async () => {
+test('data looks reasonable', async () => {
     setupFetchMock();
     const data = await loadAllData();
     // sigh, there are territories in here
     expect(data.stateInfos.codeToStateName.size).toBeGreaterThanOrEqual(51);
     expect(data.electionData.get(2016).nationalDAdvantage).toBeCloseTo(2.1, 2);
 });
+
+test('calculate electoral votes correctly', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    const knownTXValues : Array<[number, number]> = [[1972, 26], [1976, 26], [1980, 26], [1984, 29], [1988, 29], [1992, 32], [1996, 32], [2000, 32], [2004, 34], [2008, 34], [2012, 38], [2016, 38], [2020, 38]];
+    for (let [year, evs] of knownTXValues) {
+        expect(ElectoralVoteDataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year)).toBe(evs);
+    }
+});
+
 
 function setupFetchMock() {
   // @ts-ignore
