@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import _ from 'lodash';
 
-const VALIDATE_DATA = false;
+const VALIDATE_DATA = process.env.NODE_ENV !== "production";
 
 export interface StateName {
     code: string,
@@ -28,21 +28,30 @@ export interface ElectionStateResult {
 };
 
 const cleanElectionResults = (d: any): ElectionStateResult => {
-    let dKey = _.find(Object.keys(d), key => key.endsWith("(D)"));
-    let rKey = _.find(Object.keys(d), key => key.endsWith("(R)"));
+    const dKey = _.find(Object.keys(d), key => key.endsWith("(D)"));
+    const rKey = _.find(Object.keys(d), key => key.endsWith("(R)"));
     return {
-        stateCode: d[""],
+        stateCode: d["State"],
         dCount: Number(d[dKey].replace(/,/g, '')),
         rCount: Number(d[rKey].replace(/,/g, '')),
         totalCount: Number(d["Total"].replace(/,/g, ''))
     };
 };
 
+const cleanElectoralVoteResults = (d: any): [string, number] => {
+    return [d["State"], Number(d["Electoral Votes"].replace(/,/g, ''))];
+};
+
 export const MIN_YEAR = 1972;
 export const MAX_YEAR = 2016;
 export const YEAR_STEP = 4;
 
+const MIN_ELECTORAL_VOTE_YEAR = 1971;
+const MAX_ELECTORAL_VOTE_YEAR = 2011;
+const ELECTORAL_VOTE_YEAR_STEP = 10;
+
 export type ElectionData = Map<number, ElectionYearData>;
+export type ElectoralVoteData = Array<[number, Map<string, number>]>;
 
 export interface ElectionYearData {
     stateResults: Map<string, ElectionStateResult>,
@@ -51,28 +60,108 @@ export interface ElectionYearData {
 
 export interface DataCollection {
     stateInfos: StateInfos,
-    electionData: ElectionData
+    electionData: ElectionData,
+    electoralVoteData: ElectoralVoteData
 };
 
-function validateData(year: number, stateData: ElectionStateResult): void {
-    if (stateData.dCount + stateData.rCount > stateData.totalCount) {
-        alert(`total is too low: ${year} ${stateData.stateCode}`);
-    }
-    if ((stateData.rCount + stateData.dCount) * 2 < stateData.totalCount) {
-        alert(`too many third-party votes ${year} ${stateData.stateCode}`);
-    }
-    if (stateData.dCount > 10 * stateData.rCount) {
-        if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {
-            alert(`too many d's: ${year} ${stateData.stateCode}`);
-        }
-    }
-    if (stateData.rCount > 10 * stateData.dCount) {
-        alert(`too many r's: ${year} ${stateData.stateCode}`);
+export interface ElectoralVoteResult {
+    dElectoralVotes: number,
+    rElectoralVotes: number
+}
+
+export class Utils {
+    public static dAdvantageFromVotes(stateData: ElectionStateResult, baselineDAdvantage = 0): number {
+        let dAdvantage = ((stateData.dCount - stateData.rCount) * 100.0) / stateData.totalCount;
+        return dAdvantage - baselineDAdvantage;
     }
 }
 
+export class ElectoralVoteDataUtils {
+    public static getElectoralVoteDataForYear(data: ElectoralVoteData, year: number): Map<string, number> {
+        if (year < data[0][0]) {
+            throw `Year ${year} is too early for data, which has earliest year ${data[0][0]}`;
+        }
+        let dataIndex = 0;
+        while ((dataIndex + 1) < data.length && data[dataIndex + 1][0] < year) {
+            dataIndex += 1;
+        }
+        return data[dataIndex][1];
+    }
+    public static getElectoralVotesForState(data: ElectoralVoteData, stateCode: string, year: number): number {
+        const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
+        return electoralVoteData.get(stateCode);
+    }
+    public static getDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): ElectoralVoteResult {
+        const electoralVoteYearData = this.getElectoralVoteDataForYear(electoralVoteData, year);
+        const allStateResults = electionData.get(year).stateResults;
+        //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
+        const a = Array.from(electoralVoteYearData.entries());
+        let dElectoralVotes = 0, rElectoralVotes = 0;
+        for (let [stateCode, electoralVotes] of a) {
+            const stateResults = allStateResults.get(stateCode);
+            if (stateResults.dCount > stateResults.rCount) {
+                dElectoralVotes += electoralVotes;
+            }
+            else {
+                rElectoralVotes += electoralVotes;
+            }
+        }
+        // adjustments for split electoral votes, sigh
+        switch(year) {
+            case 2008:
+                // NE
+                dElectoralVotes += 1;
+                rElectoralVotes -= 1;
+                break;
+            case 2016:
+                // ME
+                dElectoralVotes -= 1;
+                rElectoralVotes += 1;
+                break;
+        }
+        return {dElectoralVotes: dElectoralVotes, rElectoralVotes: rElectoralVotes};
+    }
+}
+
+function validateData(year: number, stateData: ElectionStateResult, stateInfos: StateInfos): void {
+    if (!stateInfos.codeToStateName.has(stateData.stateCode)) {
+        throw `invalid state code: ${year} ${stateData.stateCode}`;
+    }
+    if (stateData.dCount + stateData.rCount > stateData.totalCount) {
+        throw `total is too low: ${year} ${stateData.stateCode}`;
+    }
+    if ((stateData.rCount + stateData.dCount) * 2 < stateData.totalCount) {
+        throw `too many third-party votes ${year} ${stateData.stateCode}`;
+    }
+    if (stateData.dCount > 10 * stateData.rCount) {
+        if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {
+            throw `too many d's: ${year} ${stateData.stateCode}`;
+        }
+    }
+    if (stateData.rCount > 10 * stateData.dCount) {
+        throw `too many r's: ${year} ${stateData.stateCode}`;
+    }
+}
+
+function validateElectoralData(year: number, stateVotes: [string, number], stateInfos: StateInfos): void {
+    if (!stateInfos.codeToStateName.has(stateVotes[0])) {
+        throw `invalid state code: ${year} ${stateVotes[0]}`;
+    }
+    if (!(stateVotes[1] > 0 && stateVotes[1] < 70)) {
+        throw `invalid number of votes: ${year} ${stateVotes[0]} ${stateVotes[1]}`;
+    }
+}
+
+//TODO - write tests for this method
 export const loadAllData = async (): Promise<DataCollection> => {
     let stateNamesPromise = d3.tsv('data/us-state-names.tsv', cleanStateName);
+    const stateNames = await stateNamesPromise;
+    // Weird way to check for errors
+    if (stateNames.columns.length != 3) {
+        throw "Failed to load state names data!";
+    }
+    const stateInfos = makeStateInfos(stateNames);
+
     let electionDataPromises = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
         electionDataPromises[year] = d3.csv('data/electionResults/' + year + '.csv', cleanElectionResults);
@@ -86,24 +175,47 @@ export const loadAllData = async (): Promise<DataCollection> => {
         };
         data.forEach(stateResult => {
             if (VALIDATE_DATA) {
-                validateData(year, stateResult);
+                validateData(year, stateResult, stateInfos);
             }
             electionYearData.stateResults.set(stateResult.stateCode, stateResult);
         });
         setNationalDAdvantage(electionYearData);
         if (electionYearData.stateResults.size != 51) {
-            throw "Invalid data for year " + year;
+            throw `Invalid data for year ${year}, got ${electionYearData.stateResults.size} stateResults: ${Array.from(electionYearData.stateResults.keys())}`;
         }
         electionData.set(year, electionYearData);
     }
-    let stateNames = await stateNamesPromise;
-    // Weird way to check for errors
-    if (stateNames.columns.length != 3) {
-        throw "Failed to load state names data!";
+    let electoralVotePromises = {};
+    for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
+        electoralVotePromises[year] = d3.csv('data/electoralVotes/' + year + '.csv', cleanElectoralVoteResults);
+    }
+    let electoralVoteData : ElectoralVoteData = [];
+    for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
+        let data : [string, number][] = await electoralVotePromises[year];
+        let yearVoteData = new Map<string, number>();
+        let totalElectoralVotes = 0;
+        data.forEach(stateVotes => {
+            if (VALIDATE_DATA) {
+                validateElectoralData(year, stateVotes, stateInfos);
+            }
+            yearVoteData.set(stateVotes[0], stateVotes[1]);
+            totalElectoralVotes += stateVotes[1];
+        });
+        if (yearVoteData.size != 51) {
+            throw "Invalid electoral data for year " + year;
+        }
+        // This can vary between years, but for all our data 538 is the right number
+        if (VALIDATE_DATA) {
+            if (totalElectoralVotes != 538) {
+                throw `Wrong number of electoral votes ${year} ${totalElectoralVotes}`;
+            }
+        }
+        electoralVoteData.push([year, yearVoteData]);
     }
     return {
-        stateInfos: makeStateInfos(stateNames),
-        electionData: electionData
+        stateInfos: stateInfos,
+        electionData: electionData,
+        electoralVoteData: electoralVoteData
     };
 };
 
