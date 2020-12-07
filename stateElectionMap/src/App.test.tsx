@@ -8,3 +8,5 @@ it('renders without crashing', () => {
   /*ReactDOM.render(<App />, div);
   ReactDOM.unmountComponentAtNode(div);*/
 });
+
+// TODO - test dAdvantageFromVotes

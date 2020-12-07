@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button } from 'semantic-ui-react';
 import * as _ from 'lodash';
-import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP } from './DataHandling';
+import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP, ElectoralVoteDataUtils } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
 import { LineChart } from 'react-chartkick';
 import ReactChartkick from 'react-chartkick';
@@ -9,6 +9,8 @@ import Chart from 'chart.js';
 
 import 'rc-slider/assets/index.css';
 import './App.css';
+
+const SHOW_ELECTORAL_VOTES = process.env.NODE_ENV !== "production";
 
 ReactChartkick.addAdapter(Chart);
 
@@ -132,7 +134,12 @@ class App extends React.Component<{}, AppState> {
     }
 
     onSliderDateChange = (date: TickDateRange) => {
-        this.setState({ year: date.endYear });
+        if (SHOW_ELECTORAL_VOTES) {
+            this.setState({ year: date.endYear, selectedStateCode: undefined});
+        }
+        else {
+            this.setState({ year: date.endYear });
+        }
     }
 
     onStateSelected = (stateCode) => {
@@ -311,6 +318,13 @@ class App extends React.Component<{}, AppState> {
                     }}
                 />
                 </div>;
+        }
+        else if (SHOW_ELECTORAL_VOTES) {
+            const results = ElectoralVoteDataUtils.getDAndRElectoralVotes(this.state.electoralVoteData, this.state.electionData, this.state.year);
+            const text = results.dElectoralVotes > results.rElectoralVotes ?
+                `EV: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
+                `EV: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
+            lineChart = <div>{text}</div>;
         }
 
         return (

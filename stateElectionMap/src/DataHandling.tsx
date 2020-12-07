@@ -64,8 +64,13 @@ export interface DataCollection {
     electoralVoteData: ElectoralVoteData
 };
 
+export interface ElectoralVoteResult {
+    dElectoralVotes: number,
+    rElectoralVotes: number
+}
+
 export class ElectoralVoteDataUtils {
-    public static getElectoralVotesForState(data: ElectoralVoteData, stateCode: string, year: number) {
+    public static getElectoralVoteDataForYear(data: ElectoralVoteData, year: number): Map<string, number> {
         if (year < data[0][0]) {
             throw `Year ${year} is too early for data, which has earliest year ${data[0][0]}`;
         }
@@ -73,7 +78,41 @@ export class ElectoralVoteDataUtils {
         while ((dataIndex + 1) < data.length && data[dataIndex + 1][0] < year) {
             dataIndex += 1;
         }
-        return data[dataIndex][1].get(stateCode);
+        return data[dataIndex][1];
+    }
+    public static getElectoralVotesForState(data: ElectoralVoteData, stateCode: string, year: number): number {
+        const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
+        return electoralVoteData.get(stateCode);
+    }
+    public static getDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): ElectoralVoteResult {
+        const electoralVoteYearData = this.getElectoralVoteDataForYear(electoralVoteData, year);
+        const allStateResults = electionData.get(year).stateResults;
+        //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
+        const a = Array.from(electoralVoteYearData.entries());
+        let dElectoralVotes = 0, rElectoralVotes = 0;
+        for (let [stateCode, electoralVotes] of a) {
+            const stateResults = allStateResults.get(stateCode);
+            if (stateResults.dCount > stateResults.rCount) {
+                dElectoralVotes += electoralVotes;
+            }
+            else {
+                rElectoralVotes += electoralVotes;
+            }
+        }
+        // adjustments for split electoral votes, sigh
+        switch(year) {
+            case 2008:
+                // NE
+                dElectoralVotes += 1;
+                rElectoralVotes -= 1;
+                break;
+            case 2016:
+                // ME
+                dElectoralVotes -= 1;
+                rElectoralVotes += 1;
+                break;
+        }
+        return {dElectoralVotes: dElectoralVotes, rElectoralVotes: rElectoralVotes};
     }
 }
 

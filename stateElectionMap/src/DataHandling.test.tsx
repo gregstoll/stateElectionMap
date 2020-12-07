@@ -10,15 +10,40 @@ test('data looks reasonable', async () => {
     expect(data.electionData.get(2016).nationalDAdvantage).toBeCloseTo(2.1, 2);
 });
 
-test('calculate electoral votes correctly', async () => {
+test('calculate electoral votes by state correctly', async () => {
     setupFetchMock();
     const data = await loadAllData();
     const knownTXValues : Array<[number, number]> = [[1972, 26], [1976, 26], [1980, 26], [1984, 29], [1988, 29], [1992, 32], [1996, 32], [2000, 32], [2004, 34], [2008, 34], [2012, 38], [2016, 38], [2020, 38]];
     for (let [year, evs] of knownTXValues) {
         const actualEvs = ElectoralVoteDataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year);
-        expect([year, actualEvs]).toStrictEqual([year, evs]);
+        // assert on the year here so it's clear what year failed.  Is there a better way to do this?
+        expect([year, evs]).toStrictEqual([year, actualEvs]);
     }
 });
+
+test('calculate electoral vote totals', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    const knownDRValues : Array<[number, number, number]> = [
+        [1972, 17, 521],
+        [1976, 297, 241],
+        [1980, 49, 489],
+        [1984, 13, 525],
+        [1988, 112, 426],
+        [1992, 370, 168],
+        [1996, 379, 159],
+        [2000, 267, 271],
+        [2004, 252, 286],
+        [2008, 365, 173],
+        [2012, 332, 206],
+        [2016, 232, 306]
+    ];
+    for (let [year, d, r] of knownDRValues) {
+        const actualEvs = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, year);
+        expect([year, actualEvs.dElectoralVotes, actualEvs.rElectoralVotes]).toStrictEqual([year, d, r]);
+    }
+});
+
 
 
 function setupFetchMock() {
