@@ -9,4 +9,4 @@ it('renders without crashing', () => {
   ReactDOM.unmountComponentAtNode(div);*/
 });
 
-// TODO - test dAdvantageFromVotes
+

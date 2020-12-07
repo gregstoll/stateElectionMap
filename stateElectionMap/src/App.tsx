@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button } from 'semantic-ui-react';
 import * as _ from 'lodash';
-import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP, ElectoralVoteDataUtils } from './DataHandling';
+import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP, ElectoralVoteDataUtils, Utils } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
 import { LineChart } from 'react-chartkick';
 import ReactChartkick from 'react-chartkick';
@@ -77,11 +77,6 @@ class App extends React.Component<{}, AppState> {
         }
         let yearState = { year: MAX_YEAR };
         this.setState(Object.assign(yearState, data));
-    }
-
-    dAdvantageFromVotes(stateData: ElectionStateResult, baselineDAdvantage = 0): number {
-        let dAdvantage = ((stateData.dCount - stateData.rCount) * 100.0) / stateData.totalCount;
-        return dAdvantage - baselineDAdvantage;
     }
 
     colorFromDAndRVote(dVote: number, rVote: number, totalVote: number, baselineDAdvantage = 0) {
@@ -248,7 +243,7 @@ class App extends React.Component<{}, AppState> {
         for (let [stateCode, value] of a) {
             let stateData = electionData.stateResults.get(stateCode);
             if (stateData) {
-                let dAdvantage = this.dAdvantageFromVotes(stateData, baselineDAdvantage);
+                let dAdvantage = Utils.dAdvantageFromVotes(stateData, baselineDAdvantage);
                 stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
                 stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage) + "\n" + (this.state.rawResults ? "Actual results" : "Relative to popular vote"));
             }
@@ -261,7 +256,7 @@ class App extends React.Component<{}, AppState> {
                 let yearElectionData = this.state.electionData.get(year);
                 let yearBaselineDAdvantage = this.state.rawResults ? 0 : yearElectionData.nationalDAdvantage;
                 let stateData = yearElectionData.stateResults.get(this.state.selectedStateCode);
-                let y = this.dAdvantageFromVotes(stateData, yearBaselineDAdvantage);
+                let y = Utils.dAdvantageFromVotes(stateData, yearBaselineDAdvantage);
                 data[year] = y;
 
                 min = Math.min(min, y);

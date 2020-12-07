@@ -69,6 +69,13 @@ export interface ElectoralVoteResult {
     rElectoralVotes: number
 }
 
+export class Utils {
+    public static dAdvantageFromVotes(stateData: ElectionStateResult, baselineDAdvantage = 0): number {
+        let dAdvantage = ((stateData.dCount - stateData.rCount) * 100.0) / stateData.totalCount;
+        return dAdvantage - baselineDAdvantage;
+    }
+}
+
 export class ElectoralVoteDataUtils {
     public static getElectoralVoteDataForYear(data: ElectoralVoteData, year: number): Map<string, number> {
         if (year < data[0][0]) {

@@ -1,4 +1,4 @@
-import { loadAllData, DataCollection, ElectoralVoteDataUtils } from './DataHandling';
+import { loadAllData, ElectoralVoteDataUtils, Utils } from './DataHandling';
 import fs from "fs";
 import path from "path";
 
@@ -45,6 +45,11 @@ test('calculate electoral vote totals', async () => {
 });
 
 
+it('dAdvantageFromVotes', () => {
+    expect(Utils.dAdvantageFromVotes({dCount: 100, rCount: 150, stateCode: "TX", totalCount: 250})).toEqual(-20);
+    expect(Utils.dAdvantageFromVotes({dCount: 100, rCount: 150, stateCode: "TX", totalCount: 250}, 0)).toEqual(-20);
+    expect(Utils.dAdvantageFromVotes({dCount: 100, rCount: 150, stateCode: "TX", totalCount: 250}, -10)).toEqual(-10);
+});
 
 function setupFetchMock() {
   // @ts-ignore
