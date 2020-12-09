@@ -84,7 +84,7 @@ class App extends React.Component<{}, AppState> {
         const _colors =
             ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'];
 
-        let dAdvantage = ((dVote - rVote) * 100.0) / totalVote;
+        const dAdvantage = ((dVote - rVote) * 100.0) / totalVote;
         // 5 red, 5 blue (don't use middle one)
         const increment = 3;
         if (dAdvantage < baselineDAdvantage - 4 * increment) {
@@ -116,16 +116,6 @@ class App extends React.Component<{}, AppState> {
             return _colors[7];
         }
         return _colors[6];
-    }
-
-    textFromDAdvantage(dAdvantage: number) {
-        if (dAdvantage > 0) {
-            return "D+" + (dAdvantage).toFixed(1) + "%";
-        }
-        if (dAdvantage < 0) {
-            return "R+" + (-1 * dAdvantage).toFixed(1) + "%";
-        }
-        return "Even";
     }
 
     onSliderDateChange = (date: TickDateRange) => {
@@ -245,7 +235,7 @@ class App extends React.Component<{}, AppState> {
             if (stateData) {
                 let dAdvantage = Utils.dAdvantageFromVotes(stateData, baselineDAdvantage);
                 stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
-                stateTitles.set(stateCode, this.textFromDAdvantage(dAdvantage) + "\n" + (this.state.rawResults ? "Actual results" : "Relative to popular vote"));
+                stateTitles.set(stateCode, Utils.textFromDAdvantage(dAdvantage) + "\n" + (this.state.rawResults ? "Actual results" : "Relative to popular vote"));
             }
         }
 
@@ -320,6 +310,7 @@ class App extends React.Component<{}, AppState> {
                 `EV: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
                 `EV: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
             lineChart = <div>{text}</div>;
+            //TODO - calculate differences from last election, show in BarChart
         }
 
         return (
@@ -346,7 +337,7 @@ class App extends React.Component<{}, AppState> {
                         <Button active={this.state.isCartogram} onClick={() => this.setState({ isCartogram: true })}>Cartogram</Button>
                     </Button.Group>
                 </div>
-                <div>Year <b>{this.state.year}</b> Popular vote: <b>{this.textFromDAdvantage(nationalDAdvantage)}</b></div>
+                <div>Year <b>{this.state.year}</b> Popular vote: <b>{Utils.textFromDAdvantage(nationalDAdvantage)}</b></div>
                 <div style={{ width: 500 }} className="centerFixedWidth">
                     <DateSlider
                         yearsPerTick={YEAR_STEP}

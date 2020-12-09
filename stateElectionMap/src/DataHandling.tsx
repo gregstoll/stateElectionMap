@@ -74,6 +74,16 @@ export class Utils {
         let dAdvantage = ((stateData.dCount - stateData.rCount) * 100.0) / stateData.totalCount;
         return dAdvantage - baselineDAdvantage;
     }
+
+    public static textFromDAdvantage(dAdvantage: number): string {
+        if (dAdvantage > 0) {
+            return "D+" + (dAdvantage).toFixed(1) + "%";
+        }
+        if (dAdvantage < 0) {
+            return "R+" + (-1 * dAdvantage).toFixed(1) + "%";
+        }
+        return "Even";
+    }
 }
 
 export class ElectoralVoteDataUtils {

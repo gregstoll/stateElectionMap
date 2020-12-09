@@ -44,8 +44,21 @@ test('calculate electoral vote totals', async () => {
     }
 });
 
+test('textFromDAdvantage', () => {
+    expect(Utils.textFromDAdvantage(0)).toEqual("Even");
+    expect(Utils.textFromDAdvantage(1)).toEqual("D+1.0%");
+    expect(Utils.textFromDAdvantage(0.3)).toEqual("D+0.3%");
+    expect(Utils.textFromDAdvantage(0.9)).toEqual("D+0.9%");
+    expect(Utils.textFromDAdvantage(2.5)).toEqual("D+2.5%");
+    expect(Utils.textFromDAdvantage(12.0)).toEqual("D+12.0%");
+    expect(Utils.textFromDAdvantage(-1)).toEqual("R+1.0%");
+    expect(Utils.textFromDAdvantage(-0.3)).toEqual("R+0.3%");
+    expect(Utils.textFromDAdvantage(-0.9)).toEqual("R+0.9%");
+    expect(Utils.textFromDAdvantage(-2.5)).toEqual("R+2.5%");
+    expect(Utils.textFromDAdvantage(-12.0)).toEqual("R+12.0%");
+});
 
-it('dAdvantageFromVotes', () => {
+test('dAdvantageFromVotes', () => {
     expect(Utils.dAdvantageFromVotes({dCount: 100, rCount: 150, stateCode: "TX", totalCount: 250})).toEqual(-20);
     expect(Utils.dAdvantageFromVotes({dCount: 100, rCount: 150, stateCode: "TX", totalCount: 250}, 0)).toEqual(-20);
     expect(Utils.dAdvantageFromVotes({dCount: 100, rCount: 150, stateCode: "TX", totalCount: 250}, -10)).toEqual(-10);
