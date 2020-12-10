@@ -3,7 +3,7 @@ import { Button } from 'semantic-ui-react';
 import * as _ from 'lodash';
 import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP, ElectoralVoteDataUtils, Utils } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
-import { LineChart } from 'react-chartkick';
+import { LineChart, BarChart } from 'react-chartkick';
 import ReactChartkick from 'react-chartkick';
 import Chart from 'chart.js';
 
@@ -77,45 +77,6 @@ class App extends React.Component<{}, AppState> {
         }
         let yearState = { year: MAX_YEAR };
         this.setState(Object.assign(yearState, data));
-    }
-
-    colorFromDAndRVote(dVote: number, rVote: number, totalVote: number, baselineDAdvantage = 0) {
-        // http://colorbrewer2.org/?type=diverging&scheme=RdBu&n=11
-        const _colors =
-            ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'];
-
-        const dAdvantage = ((dVote - rVote) * 100.0) / totalVote;
-        // 5 red, 5 blue (don't use middle one)
-        const increment = 3;
-        if (dAdvantage < baselineDAdvantage - 4 * increment) {
-            return _colors[0];
-        }
-        if (dAdvantage < baselineDAdvantage - 3 * increment) {
-            return _colors[1];
-        }
-        if (dAdvantage < baselineDAdvantage - 2 * increment) {
-            return _colors[2];
-        }
-        if (dAdvantage < baselineDAdvantage - 1 * increment) {
-            return _colors[3];
-        }
-        if (dAdvantage < baselineDAdvantage) {
-            return _colors[4];
-        }
-
-        if (dAdvantage > baselineDAdvantage + 4 * increment) {
-            return _colors[10];
-        }
-        if (dAdvantage > baselineDAdvantage + 3 * increment) {
-            return _colors[9];
-        }
-        if (dAdvantage > baselineDAdvantage + 2 * increment) {
-            return _colors[8];
-        }
-        if (dAdvantage > baselineDAdvantage + increment) {
-            return _colors[7];
-        }
-        return _colors[6];
     }
 
     onSliderDateChange = (date: TickDateRange) => {
@@ -224,7 +185,7 @@ class App extends React.Component<{}, AppState> {
 
         let stateColors = new Map<string, string>();
         let stateTitles = new Map<string, string>();
-        let lineChart = undefined;
+        let belowMapSection = undefined;
         let electionData = this.state.electionData.get(this.state.year);
         let nationalDAdvantage = electionData.nationalDAdvantage;
         let baselineDAdvantage = this.state.rawResults ? 0 : electionData.nationalDAdvantage;
@@ -234,7 +195,7 @@ class App extends React.Component<{}, AppState> {
             let stateData = electionData.stateResults.get(stateCode);
             if (stateData) {
                 let dAdvantage = Utils.dAdvantageFromVotes(stateData, baselineDAdvantage);
-                stateColors.set(stateCode, this.colorFromDAndRVote(stateData.dCount, stateData.rCount, stateData.totalCount, baselineDAdvantage));
+                stateColors.set(stateCode, Utils.colorFromDAdvantage(dAdvantage));
                 stateTitles.set(stateCode, Utils.textFromDAdvantage(dAdvantage) + "\n" + (this.state.rawResults ? "Actual results" : "Relative to popular vote"));
             }
         }
@@ -257,7 +218,7 @@ class App extends React.Component<{}, AppState> {
             let stateNameObj = this.state.stateInfos.codeToStateName.get(this.state.selectedStateCode);
             //let yMin = Math.min(0, min);
             //let yMax = Math.max(0, max);
-            lineChart = <div style={{ width: 500 }} className="centerFixedWidth">{stateNameObj.name}
+            belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{stateNameObj.name}
                 <LineChart width={500} height={300}
                     data={[{ "name": "margin", "data": data }]}
                     xtitle="Year" ytitle={this.state.rawResults ? "advantage" : "relative to national"} curve={false} legend={false} colors={['green', 'gray']}
@@ -274,7 +235,7 @@ class App extends React.Component<{}, AppState> {
                                             return "R+" + (-1 * value);
                                         }
                                         else {
-                                            return "Even"
+                                            return "Even";
                                         }
                                     }
                                 }
@@ -313,22 +274,73 @@ class App extends React.Component<{}, AppState> {
                 // gather change from last election
                 const thisYearElectionData = this.state.electionData.get(this.state.year);
                 const lastYearElectionData = this.state.electionData.get(this.state.year - 4);
+                const thisYearBaselineAdvantage = this.state.rawResults ? 0 : thisYearElectionData.nationalDAdvantage;
+                const lastYearBaselineAdvantage = this.state.rawResults ? 0 : lastYearElectionData.nationalDAdvantage;
                 let stateDDifferences: Array<[number, string]> = [];
                 const thisYearEntries = Array.from(thisYearElectionData.stateResults.entries());
                 for (let [state, thisYearResult] of thisYearEntries) {
-                    const dDiff = Utils.dAdvantageFromVotes(thisYearResult) - Utils.dAdvantageFromVotes(lastYearElectionData.stateResults.get(state));
+                    const dDiff = Utils.dAdvantageFromVotes(thisYearResult, thisYearBaselineAdvantage) - Utils.dAdvantageFromVotes(lastYearElectionData.stateResults.get(state), lastYearBaselineAdvantage);
                     stateDDifferences.push([dDiff, state]);
                 }
                 stateDDifferences.sort((a, b) => b[0] - a[0]);
                 let entries = [];
-                //TODO - BarChart here
+                let colors = [];
                 for (let [dDiff, state] of stateDDifferences) {
-                    entries.push(<li key={state}>{state}: {Utils.textFromDAdvantage(dDiff)}</li>);
+                    entries.push([state, dDiff]);
+                    colors.push(Utils.colorFromDAdvantage(dDiff));
                 }
-                lineChart = <div>{evText}<br/><ul>{entries}</ul></div>;
+                const xTitle = this.state.rawResults ? "Actual change from last election" : "Relative change from last election";
+                const tooltipDescription = this.state.rawResults ? "" : "(relative change)";
+                const codeToStateName = this.state.stateInfos.codeToStateName;
+                // the double array of colors makes chart.js use one color per bar
+                belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}
+                    <br/>
+                    <BarChart width={500} height={800} data={entries} colors={[colors]}
+                        xtitle={xTitle}
+                        library={{
+                            scales: {
+                                xAxes: [{
+                                    ticks: {
+                                        callback: function (value, index, values) {
+                                            if (value > 0) {
+                                                return "D+" + value;
+                                            }
+                                            else if (value < 0) {
+                                                return "R+" + (-1 * value);
+                                            }
+                                            else {
+                                                return "Even";
+                                            }
+                                        }
+                                    },
+                                    position: "top"
+                                }]
+                            },
+                            tooltips: {
+                                callbacks: {
+                                    title: function (tooltipItems, data){
+                                        // show state name instead of code here
+                                        return codeToStateName.get(tooltipItems[0].yLabel).name;
+                                    },
+                                    label: function (tooltipItem, data) {
+                                        let valueText = "Even";
+                                        if (tooltipItem.xLabel > 0) {
+                                            valueText = "D+" + tooltipItem.xLabel.toFixed(1) + "%";
+                                        }
+                                        else if (tooltipItem.xLabel < 0) {
+                                            valueText = "R+" + (-1 * tooltipItem.xLabel).toFixed(1) + "%";
+                                        }
+                                        valueText += "\n" + tooltipDescription;
+                                        return valueText;
+                                    }
+                                }
+                            }
+                        }}
+                        />
+                    </div>;
             }
             else {
-                lineChart = <div>{evText}</div>;
+                belowMapSection = <div>{evText}</div>;
             }
         }
 
@@ -365,7 +377,7 @@ class App extends React.Component<{}, AppState> {
                         currentTickDateRange={new TickDateRange(this.state.year)}
                         onTickDateRangeChange={this.onSliderDateChange} />
                 </div>
-                {lineChart}
+                {belowMapSection}
             </div>
         );
     }

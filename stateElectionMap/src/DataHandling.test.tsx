@@ -65,6 +65,30 @@ test('dAdvantageFromVotes', () => {
     expect(Utils.dAdvantageFromVotes({dCount: 100, rCount: 150, stateCode: "TX", totalCount: 250}, -10)).toEqual(-10);
 });
 
+test('colorFromDAdvantage', () => {
+    // honestly not a great test, but /shrug
+    expect(Utils.colorFromDAdvantage(-100)).toEqual('#67001f');
+    expect(Utils.colorFromDAdvantage(-12.1)).toEqual('#67001f');
+    expect(Utils.colorFromDAdvantage(-11.9)).toEqual('#b2182b');
+    expect(Utils.colorFromDAdvantage(-9.1)).toEqual('#b2182b');
+    expect(Utils.colorFromDAdvantage(-8.9)).toEqual('#d6604d');
+    expect(Utils.colorFromDAdvantage(-6.1)).toEqual('#d6604d');
+    expect(Utils.colorFromDAdvantage(-5.9)).toEqual('#f4a582');
+    expect(Utils.colorFromDAdvantage(-3.1)).toEqual('#f4a582');
+    expect(Utils.colorFromDAdvantage(-2.9)).toEqual('#fddbc7');
+    expect(Utils.colorFromDAdvantage(-0.1)).toEqual('#fddbc7');
+    expect(Utils.colorFromDAdvantage(0.1)).toEqual('#d1e5f0');
+    expect(Utils.colorFromDAdvantage(2.9)).toEqual('#d1e5f0');
+    expect(Utils.colorFromDAdvantage(3.1)).toEqual('#92c5de');
+    expect(Utils.colorFromDAdvantage(5.9)).toEqual('#92c5de');
+    expect(Utils.colorFromDAdvantage(6.1)).toEqual('#4393c3');
+    expect(Utils.colorFromDAdvantage(8.9)).toEqual('#4393c3');
+    expect(Utils.colorFromDAdvantage(9.1)).toEqual('#2166ac');
+    expect(Utils.colorFromDAdvantage(11.9)).toEqual('#2166ac');
+    expect(Utils.colorFromDAdvantage(12.1)).toEqual('#053061');
+    expect(Utils.colorFromDAdvantage(100)).toEqual('#053061');
+});
+
 function setupFetchMock() {
   // @ts-ignore
   window.fetch = async (info, init) => {

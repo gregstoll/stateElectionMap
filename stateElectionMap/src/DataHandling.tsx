@@ -75,6 +75,44 @@ export class Utils {
         return dAdvantage - baselineDAdvantage;
     }
 
+    public static colorFromDAdvantage(dAdvantage: number): string {
+        // http://colorbrewer2.org/?type=diverging&scheme=RdBu&n=11
+        const _colors =
+            ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'];
+
+        // 5 red, 5 blue (don't use middle one)
+        const increment = 3;
+        if (dAdvantage < -4 * increment) {
+            return _colors[0];
+        }
+        if (dAdvantage < -3 * increment) {
+            return _colors[1];
+        }
+        if (dAdvantage < -2 * increment) {
+            return _colors[2];
+        }
+        if (dAdvantage < -1 * increment) {
+            return _colors[3];
+        }
+        if (dAdvantage < 0) {
+            return _colors[4];
+        }
+
+        if (dAdvantage > 4 * increment) {
+            return _colors[10];
+        }
+        if (dAdvantage > 3 * increment) {
+            return _colors[9];
+        }
+        if (dAdvantage > 2 * increment) {
+            return _colors[8];
+        }
+        if (dAdvantage > increment) {
+            return _colors[7];
+        }
+        return _colors[6];
+    }
+
     public static textFromDAdvantage(dAdvantage: number): string {
         if (dAdvantage > 0) {
             return "D+" + (dAdvantage).toFixed(1) + "%";
