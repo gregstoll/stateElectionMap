@@ -306,11 +306,30 @@ class App extends React.Component<{}, AppState> {
         }
         else if (SHOW_ELECTORAL_VOTES) {
             const results = ElectoralVoteDataUtils.getDAndRElectoralVotes(this.state.electoralVoteData, this.state.electionData, this.state.year);
-            const text = results.dElectoralVotes > results.rElectoralVotes ?
-                `EV: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
-                `EV: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
-            lineChart = <div>{text}</div>;
-            //TODO - calculate differences from last election, show in BarChart
+            const evText = results.dElectoralVotes > results.rElectoralVotes ?
+                `Electoral votes: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
+                `Electoral votes: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
+            if (this.state.year > MIN_YEAR) {
+                // gather change from last election
+                const thisYearElectionData = this.state.electionData.get(this.state.year);
+                const lastYearElectionData = this.state.electionData.get(this.state.year - 4);
+                let stateDDifferences: Array<[number, string]> = [];
+                const thisYearEntries = Array.from(thisYearElectionData.stateResults.entries());
+                for (let [state, thisYearResult] of thisYearEntries) {
+                    const dDiff = Utils.dAdvantageFromVotes(thisYearResult) - Utils.dAdvantageFromVotes(lastYearElectionData.stateResults.get(state));
+                    stateDDifferences.push([dDiff, state]);
+                }
+                stateDDifferences.sort((a, b) => b[0] - a[0]);
+                let entries = [];
+                //TODO - BarChart here
+                for (let [dDiff, state] of stateDDifferences) {
+                    entries.push(<li key={state}>{state}: {Utils.textFromDAdvantage(dDiff)}</li>);
+                }
+                lineChart = <div>{evText}<br/><ul>{entries}</ul></div>;
+            }
+            else {
+                lineChart = <div>{evText}</div>;
+            }
         }
 
         return (
