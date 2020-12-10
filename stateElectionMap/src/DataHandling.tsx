@@ -149,6 +149,9 @@ export class ElectoralVoteDataUtils {
         const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
         return electoralVoteData.get(stateCode);
     }
+    public static getTippingPointState(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number) {
+        //TODO
+    }
     // Sorted with most D states first
     public static getDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number, sortBy: StateSortingOrder): Array<ElectionStateResultWithElectoralVotes> {
         const electoralVoteYearData = this.getElectoralVoteDataForYear(electoralVoteData, year);
@@ -170,10 +173,9 @@ export class ElectoralVoteDataUtils {
         }
         return results;
     }
-    public static getTotalDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): TotalElectoralVoteResult {
-        const results = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.None);
+    private static getTotalDAndRElectoralVotesFromResults(stateResults: Array<ElectionStateResultWithElectoralVotes>, year: number): TotalElectoralVoteResult {
         let dElectoralVotes = 0, rElectoralVotes = 0;
-        for (let result of results) {
+        for (let result of stateResults) {
             if (result.dCount > result.rCount) {
                 dElectoralVotes += result.electoralVotes;
             }
@@ -195,6 +197,10 @@ export class ElectoralVoteDataUtils {
                 break;
         }
         return {dElectoralVotes: dElectoralVotes, rElectoralVotes: rElectoralVotes};
+    }
+    public static getTotalDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): TotalElectoralVoteResult {
+        const results = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.None);
+        return this.getTotalDAndRElectoralVotesFromResults(results, year);
     }
 }
 
