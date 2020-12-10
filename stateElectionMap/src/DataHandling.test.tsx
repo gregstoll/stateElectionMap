@@ -1,4 +1,4 @@
-import { loadAllData, ElectoralVoteDataUtils, Utils } from './DataHandling';
+import { loadAllData, ElectoralVoteDataUtils, Utils, StateSortingOrder } from './DataHandling';
 import fs from "fs";
 import path from "path";
 
@@ -40,8 +40,31 @@ test('calculate electoral vote totals', async () => {
         [2016, 232, 306]
     ];
     for (let [year, d, r] of knownDRValues) {
-        const actualEvs = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, year);
+        const actualEvs = ElectoralVoteDataUtils.getTotalDAndRElectoralVotes(data.electoralVoteData, data.electionData, year);
         expect([year, actualEvs.dElectoralVotes, actualEvs.rElectoralVotes]).toStrictEqual([year, d, r]);
+    }
+});
+
+test('getDAndRElectoralVotes', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    const results = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 1972, StateSortingOrder.None);
+    expect(results.length).toEqual(51);
+    expect(results.reduce((prev, curValue, curIndex) => curValue.electoralVotes + prev, 0)).toEqual(538);
+    {
+        // Pick a reasonably close election to test sorting
+        const resultsByRawVotes = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 2000, StateSortingOrder.RawVotes);
+        for (let i = 0; i < 50; ++i) {
+            expect(resultsByRawVotes[i].dCount - resultsByRawVotes[i].rCount).toBeGreaterThan(resultsByRawVotes[i+1].dCount - resultsByRawVotes[i+1].rCount);
+        }
+    }
+    {
+        // Pick a reasonably close election to test sorting
+        const resultsByPercentage = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 2000, StateSortingOrder.Percentage);
+        for (let i = 0; i < 50; ++i) {
+            expect((resultsByPercentage[i].dCount - resultsByPercentage[i].rCount)/resultsByPercentage[i].totalCount).
+                toBeGreaterThan((resultsByPercentage[i+1].dCount - resultsByPercentage[i+1].rCount)/resultsByPercentage[i+1].totalCount);
+        }
     }
 });
 

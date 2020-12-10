@@ -64,9 +64,19 @@ export interface DataCollection {
     electoralVoteData: ElectoralVoteData
 };
 
-export interface ElectoralVoteResult {
+export interface TotalElectoralVoteResult {
     dElectoralVotes: number,
     rElectoralVotes: number
+}
+
+export enum StateSortingOrder {
+    None,
+    RawVotes,
+    Percentage
+}
+
+export interface ElectionStateResultWithElectoralVotes extends ElectionStateResult {
+    electoralVotes: number
 }
 
 export class Utils {
@@ -139,19 +149,36 @@ export class ElectoralVoteDataUtils {
         const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
         return electoralVoteData.get(stateCode);
     }
-    public static getDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): ElectoralVoteResult {
+    // Sorted with most D states first
+    public static getDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number, sortBy: StateSortingOrder): Array<ElectionStateResultWithElectoralVotes> {
         const electoralVoteYearData = this.getElectoralVoteDataForYear(electoralVoteData, year);
         const allStateResults = electionData.get(year).stateResults;
         //TODO - performance https://stackoverflow.com/questions/37699320/iterating-over-typescript-map
         const a = Array.from(electoralVoteYearData.entries());
-        let dElectoralVotes = 0, rElectoralVotes = 0;
+        let results: Array<ElectionStateResultWithElectoralVotes> = [];
         for (let [stateCode, electoralVotes] of a) {
             const stateResults = allStateResults.get(stateCode);
-            if (stateResults.dCount > stateResults.rCount) {
-                dElectoralVotes += electoralVotes;
+            results.push({...stateResults, electoralVotes: electoralVotes});
+        }
+        switch (sortBy) {
+            case StateSortingOrder.RawVotes:
+                results = results.sort((a, b) => ((b.dCount - b.rCount) - (a.dCount - a.rCount)));
+                break;
+            case StateSortingOrder.Percentage:
+                results = results.sort((a, b) => ((b.dCount - b.rCount)/b.totalCount - (a.dCount - a.rCount)/a.totalCount));
+                break;
+        }
+        return results;
+    }
+    public static getTotalDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): TotalElectoralVoteResult {
+        const results = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.None);
+        let dElectoralVotes = 0, rElectoralVotes = 0;
+        for (let result of results) {
+            if (result.dCount > result.rCount) {
+                dElectoralVotes += result.electoralVotes;
             }
             else {
-                rElectoralVotes += electoralVotes;
+                rElectoralVotes += result.electoralVotes;
             }
         }
         // adjustments for split electoral votes, sigh

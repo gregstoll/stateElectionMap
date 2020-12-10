@@ -266,7 +266,7 @@ class App extends React.Component<{}, AppState> {
                 </div>;
         }
         else if (SHOW_ELECTORAL_VOTES) {
-            const results = ElectoralVoteDataUtils.getDAndRElectoralVotes(this.state.electoralVoteData, this.state.electionData, this.state.year);
+            const results = ElectoralVoteDataUtils.getTotalDAndRElectoralVotes(this.state.electoralVoteData, this.state.electionData, this.state.year);
             const evText = results.dElectoralVotes > results.rElectoralVotes ?
                 `Electoral votes: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
                 `Electoral votes: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
