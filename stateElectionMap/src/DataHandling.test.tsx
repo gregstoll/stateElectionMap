@@ -24,6 +24,7 @@ test('calculate electoral votes by state correctly', async () => {
 test('calculate electoral vote totals', async () => {
     setupFetchMock();
     const data = await loadAllData();
+    // This ignores faithless electors, fwiw
     const knownDRValues : Array<[number, number, number]> = [
         [1972, 17, 521],
         [1976, 297, 241],
