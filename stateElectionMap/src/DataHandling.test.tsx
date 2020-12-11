@@ -1,4 +1,4 @@
-import { loadAllData, ElectoralVoteDataUtils, Utils, StateSortingOrder } from './DataHandling';
+import { loadAllData, DataUtils, Utils, StateSortingOrder } from './DataHandling';
 import fs from "fs";
 import path from "path";
 
@@ -15,7 +15,7 @@ test('calculate electoral votes by state correctly', async () => {
     const data = await loadAllData();
     const knownTXValues : Array<[number, number]> = [[1972, 26], [1976, 26], [1980, 26], [1984, 29], [1988, 29], [1992, 32], [1996, 32], [2000, 32], [2004, 34], [2008, 34], [2012, 38], [2016, 38], [2020, 38]];
     for (let [year, evs] of knownTXValues) {
-        const actualEvs = ElectoralVoteDataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year);
+        const actualEvs = DataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year);
         // assert on the year here so it's clear what year failed.  Is there a better way to do this?
         expect([year, evs]).toStrictEqual([year, actualEvs]);
     }
@@ -40,7 +40,7 @@ test('calculate electoral vote totals', async () => {
         [2016, 232, 306]
     ];
     for (let [year, d, r] of knownDRValues) {
-        const actualEvs = ElectoralVoteDataUtils.getTotalDAndRElectoralVotes(data.electoralVoteData, data.electionData, year);
+        const actualEvs = DataUtils.getTotalDAndRElectoralVotes(data.electoralVoteData, data.electionData, year);
         expect([year, actualEvs.dElectoralVotes, actualEvs.rElectoralVotes]).toStrictEqual([year, d, r]);
     }
 });
@@ -48,19 +48,19 @@ test('calculate electoral vote totals', async () => {
 test('getDAndRElectoralVotes', async () => {
     setupFetchMock();
     const data = await loadAllData();
-    const results = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 1972, StateSortingOrder.None);
+    const results = DataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 1972, StateSortingOrder.None);
     expect(results.length).toEqual(51);
     expect(results.reduce((prev, curValue, curIndex) => curValue.electoralVotes + prev, 0)).toEqual(538);
     {
         // Pick a reasonably close election to test sorting
-        const resultsByRawVotes = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 2000, StateSortingOrder.RawVotes);
+        const resultsByRawVotes = DataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 2000, StateSortingOrder.RawVotes);
         for (let i = 0; i < 50; ++i) {
             expect(resultsByRawVotes[i].dCount - resultsByRawVotes[i].rCount).toBeGreaterThan(resultsByRawVotes[i+1].dCount - resultsByRawVotes[i+1].rCount);
         }
     }
     {
         // Pick a reasonably close election to test sorting
-        const resultsByPercentage = ElectoralVoteDataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 2000, StateSortingOrder.Percentage);
+        const resultsByPercentage = DataUtils.getDAndRElectoralVotes(data.electoralVoteData, data.electionData, 2000, StateSortingOrder.Percentage);
         for (let i = 0; i < 50; ++i) {
             expect((resultsByPercentage[i].dCount - resultsByPercentage[i].rCount)/resultsByPercentage[i].totalCount).
                 toBeGreaterThan((resultsByPercentage[i+1].dCount - resultsByPercentage[i+1].rCount)/resultsByPercentage[i+1].totalCount);
@@ -78,8 +78,26 @@ test('getTippingPointState', async () => {
         [2016, "PA"],
     ];
     for (let [year, tippingPointState] of knownTippingPointStates) {
-        const tippingPoint = ElectoralVoteDataUtils.getTippingPointState(data.electoralVoteData, data.electionData, year);
+        const tippingPoint = DataUtils.getTippingPointState(data.electoralVoteData, data.electionData, year);
         expect([year, tippingPoint.stateCode]).toStrictEqual([year, tippingPointState]);
+    }
+});
+
+test('getClosestStateByPercentage', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    const knownClosestStates : Array<[number, string]> = [
+        [1972, "MN"],
+        [1984, "MN"],
+        [2000, "FL"],
+        [2004, "WI"],
+        [2008, "MO"],
+        [2012, "FL"],
+        [2016, "MI"],
+    ];
+    for (let [year, closestState] of knownClosestStates) {
+        const closest = DataUtils.getClosestStateByPercentage(data.electionData, year);
+        expect([year, closest.stateCode]).toStrictEqual([year, closestState]);
     }
 });
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button } from 'semantic-ui-react';
 import * as _ from 'lodash';
-import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP, ElectoralVoteDataUtils, Utils } from './DataHandling';
+import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP, DataUtils, Utils } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
 import { LineChart, BarChart } from 'react-chartkick';
 import ReactChartkick from 'react-chartkick';
@@ -266,11 +266,7 @@ class App extends React.Component<{}, AppState> {
                 </div>;
         }
         else if (SHOW_ELECTORAL_VOTES) {
-            const results = ElectoralVoteDataUtils.getTotalDAndRElectoralVotes(this.state.electoralVoteData, this.state.electionData, this.state.year);
-            const evText = results.dElectoralVotes > results.rElectoralVotes ?
-                `Electoral votes: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
-                `Electoral votes: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
-            const tippingPointState = ElectoralVoteDataUtils.getTippingPointState(this.state.electoralVoteData, this.state.electionData, this.state.year);
+            const results = DataUtils.getTotalDAndRElectoralVotes(this.state.electoralVoteData, this.state.electionData, this.state.year);
             let barChart = undefined;
             if (this.state.year > MIN_YEAR) {
                 // gather change from last election
@@ -338,9 +334,16 @@ class App extends React.Component<{}, AppState> {
                         }}
                         />;
             }
+            const evText = results.dElectoralVotes > results.rElectoralVotes ?
+                `Electoral votes: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
+                `Electoral votes: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
+            const tippingPointState = DataUtils.getTippingPointState(this.state.electoralVoteData, this.state.electionData, this.state.year);
+            const closestState = DataUtils.getClosestStateByPercentage(this.state.electionData, this.state.year);
             belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}
                 <br/>
                 Tipping point state: {this.state.stateInfos.codeToStateName.get(tippingPointState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(tippingPointState))}
+                <br/>
+                Closest state (by percentage): {this.state.stateInfos.codeToStateName.get(closestState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(closestState))}
                 <br/>
                 {barChart}
                 </div>;

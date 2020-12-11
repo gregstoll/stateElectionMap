@@ -134,7 +134,7 @@ export class Utils {
     }
 }
 
-export class ElectoralVoteDataUtils {
+export class DataUtils {
     public static getElectoralVoteDataForYear(data: ElectoralVoteData, year: number): Map<string, number> {
         if (year < data[0][0]) {
             throw `Year ${year} is too early for data, which has earliest year ${data[0][0]}`;
@@ -144,6 +144,21 @@ export class ElectoralVoteDataUtils {
             dataIndex += 1;
         }
         return data[dataIndex][1];
+    }
+    public static getClosestStateByPercentage(electionData: ElectionData, year: number) : ElectionStateResult {
+        const allStateResults = electionData.get(year).stateResults;
+        // just start with something
+        let lowestRatio = 1;
+        let lowestStateResult = undefined;
+        const a = Array.from(allStateResults.entries());
+        for (let [_, stateResult] of a) {
+            const ratio = Math.abs(stateResult.dCount - stateResult.rCount) / stateResult.totalCount;
+            if (ratio < lowestRatio) {
+                lowestRatio = ratio;
+                lowestStateResult = stateResult;
+            }
+        }
+        return lowestStateResult;
     }
     public static getElectoralVotesForState(data: ElectoralVoteData, stateCode: string, year: number): number {
         const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
