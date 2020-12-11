@@ -160,6 +160,19 @@ export class DataUtils {
         }
         return lowestStateResult;
     }
+    public static getMinimumNumberOfVotesToChangeResult(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number) {
+        let voteData = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.RawVotes);
+        const totalElectoralVotes = voteData.reduce((prev, curValue, curIndex) => prev + curValue.electoralVotes, 0);
+        const decidingVote = (totalElectoralVotes % 2 === 0) ? (totalElectoralVotes / 2 + 1) : Math.ceil(totalElectoralVotes / 2);
+        const totalDElectoralVotes = voteData.reduce((prev, curValue, curIndex) => prev + ((curValue.dCount > curValue.rCount) ? curValue.electoralVotes : 0), 0);
+        const dWon = totalDElectoralVotes >= decidingVote;
+        // This assumes no electoral ties
+        // TODO - I think this calculation can be simplified?
+        const votesToChange = dWon ?
+            (totalElectoralVotes - totalDElectoralVotes - decidingVote + 1) :
+            (totalDElectoralVotes - decidingVote + 1);
+        //TODO
+    }
     public static getElectoralVotesForState(data: ElectoralVoteData, stateCode: string, year: number): number {
         const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
         return electoralVoteData.get(stateCode);
