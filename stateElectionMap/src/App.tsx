@@ -270,6 +270,8 @@ class App extends React.Component<{}, AppState> {
             const evText = results.dElectoralVotes > results.rElectoralVotes ?
                 `Electoral votes: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
                 `Electoral votes: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
+            const tippingPointState = ElectoralVoteDataUtils.getTippingPointState(this.state.electoralVoteData, this.state.electionData, this.state.year);
+            let barChart = undefined;
             if (this.state.year > MIN_YEAR) {
                 // gather change from last election
                 const thisYearElectionData = this.state.electionData.get(this.state.year);
@@ -293,9 +295,7 @@ class App extends React.Component<{}, AppState> {
                 const tooltipDescription = this.state.rawResults ? "" : "(relative change)";
                 const codeToStateName = this.state.stateInfos.codeToStateName;
                 // the double array of colors makes chart.js use one color per bar
-                belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}
-                    <br/>
-                    <BarChart width={500} height={800} data={entries} colors={[colors]}
+                barChart = <BarChart width={500} height={800} data={entries} colors={[colors]}
                         xtitle={xTitle}
                         library={{
                             scales: {
@@ -336,12 +336,14 @@ class App extends React.Component<{}, AppState> {
                                 }
                             }
                         }}
-                        />
-                    </div>;
+                        />;
             }
-            else {
-                belowMapSection = <div>{evText}</div>;
-            }
+            belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}
+                <br/>
+                Tipping point state: {this.state.stateInfos.codeToStateName.get(tippingPointState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(tippingPointState))}
+                <br/>
+                {barChart}
+                </div>;
         }
 
         return (

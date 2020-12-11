@@ -68,6 +68,21 @@ test('getDAndRElectoralVotes', async () => {
     }
 });
 
+test('getTippingPointState', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    const knownTippingPointStates : Array<[number, string]> = [
+        [1976, "WI"],
+        [2000, "FL"],
+        [2004, "OH"],
+        [2016, "PA"],
+    ];
+    for (let [year, tippingPointState] of knownTippingPointStates) {
+        const tippingPoint = ElectoralVoteDataUtils.getTippingPointState(data.electoralVoteData, data.electionData, year);
+        expect([year, tippingPoint.stateCode]).toStrictEqual([year, tippingPointState]);
+    }
+});
+
 test('textFromDAdvantage', () => {
     expect(Utils.textFromDAdvantage(0)).toEqual("Even");
     expect(Utils.textFromDAdvantage(1)).toEqual("D+1.0%");

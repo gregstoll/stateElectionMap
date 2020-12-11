@@ -149,8 +149,25 @@ export class ElectoralVoteDataUtils {
         const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
         return electoralVoteData.get(stateCode);
     }
-    public static getTippingPointState(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number) {
-        //TODO
+    public static getTippingPointState(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number) : ElectionStateResultWithElectoralVotes {
+        let voteData = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.Percentage);
+        const totalElectoralVotes = voteData.reduce((prev, curValue, curIndex) => prev + curValue.electoralVotes, 0);
+        const decidingVote = (totalElectoralVotes % 2 === 0) ? (totalElectoralVotes / 2 + 1) : Math.ceil(totalElectoralVotes / 2);
+        const totalDElectoralVotes = voteData.reduce((prev, curValue, curIndex) => prev + ((curValue.dCount > curValue.rCount) ? curValue.electoralVotes : 0), 0);
+        // start from the strongest state for the winning party
+        if (totalDElectoralVotes < decidingVote) {
+            voteData = voteData.reverse()
+        }
+        let votesSoFar = 0;
+        // Note that this ignores split electoral votes for NE and ME.  This doesn't
+        // affect the results, at least in the years we cover.
+        for (let i = 0; i < voteData.length; ++i) {
+            votesSoFar += voteData[i].electoralVotes;
+            if (votesSoFar >= decidingVote) {
+                return voteData[i];
+            }
+        }
+        throw "Couldn't find tipping point state!";
     }
     // Sorted with most D states first
     public static getDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number, sortBy: StateSortingOrder): Array<ElectionStateResultWithElectoralVotes> {

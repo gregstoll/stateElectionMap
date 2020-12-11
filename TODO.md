@@ -1,6 +1,5 @@
 - show "interesting stats" from each year
   - closest state
-  - tipping point state
   - smallest number of votes changed to swing election (knapsack problem?)
 - data from 2020 
 
