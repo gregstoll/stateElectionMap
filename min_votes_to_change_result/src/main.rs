@@ -47,6 +47,42 @@ fn read_data() -> Result<(AllElectionResults, AllElectoralVotes), Error> {
     return Ok((read_all_election_results()?, read_all_electoral_votes()?));
 }
 
+#[derive(Debug, Eq, PartialEq, Clone)]
+struct KnapsackItem {
+    weight: usize,
+    value: usize,
+}
+
+// Adapted from https://codereview.stackexchange.com/questions/188733/knapsack-0-1-in-rust
+fn solve_knapsack_problem(items: &Vec<KnapsackItem>, max_weight: usize) -> Vec<&KnapsackItem> {
+    let mut prev_row : Vec<(usize, Vec<&KnapsackItem>)> = Vec::new();
+    let mut cur_row : Vec<(usize, Vec<&KnapsackItem>)> = Vec::new();
+    for _ in 0..(max_weight + 1) {
+        prev_row.push((0, Vec::new()));
+        cur_row.push((0, Vec::new()));
+    }
+
+    for i in 0..items.len() {
+        for j in 1..(max_weight + 1) {
+            if items[i].weight > j {
+                cur_row[j] = prev_row[j].clone();
+            } else {
+                let value_with_new_entry = prev_row[j-items[i].weight].0 + items[i].value;
+                if value_with_new_entry > prev_row[j].0 {
+                    let mut new_vec = prev_row[j-items[i].weight].1.clone();
+                    new_vec.push(&items[i]);
+                    cur_row[j] = (value_with_new_entry, new_vec);
+                }
+                else {
+                    cur_row[j] = prev_row[j].clone();
+                }
+            }
+        }
+        prev_row = cur_row.clone();
+    }
+    cur_row.last().unwrap().1.clone()
+}
+
 fn read_all_electoral_votes() -> Result<AllElectoralVotes, Error> {
     let mut votes_path = PathBuf::from(DATA_DIR);
     votes_path.push("electoralVotes");
@@ -114,4 +150,73 @@ fn read_election_result_file(path: &Path) -> Result<Vec<ElectionStateResultEntry
         result.push(record);
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(non_snake_case)]
+    use super::*;
+
+    #[test]
+    fn test_knapsack_only_one_fits() {
+        let items = vec![
+            KnapsackItem {weight: 10, value: 20},
+            KnapsackItem {weight: 4, value: 2},
+            KnapsackItem {weight: 30, value: 100}];
+        let solution = solve_knapsack_problem(&items, 9);
+        assert_eq!(vec![&items[1]], solution);
+    }
+
+    #[test]
+    fn test_knapsack_only_one_fits_and_its_first() {
+        let items = vec![
+            KnapsackItem {weight: 4, value: 2},
+            KnapsackItem {weight: 10, value: 20},
+            KnapsackItem {weight: 30, value: 100}];
+        let solution = solve_knapsack_problem(&items, 9);
+        assert_eq!(vec![&items[0]], solution);
+    }
+
+    #[test]
+    fn test_knapsack_only_one_fits_and_its_last() {
+        let items = vec![
+            KnapsackItem {weight: 10, value: 20},
+            KnapsackItem {weight: 30, value: 100},
+            KnapsackItem {weight: 4, value: 2}];
+        let solution = solve_knapsack_problem(&items, 9);
+        assert_eq!(vec![&items[2]], solution);
+    }
+
+    #[test]
+    fn test_knapsack_two_fit() {
+        let items = vec![
+            KnapsackItem {weight: 10, value: 20},
+            KnapsackItem {weight: 10, value: 30},
+            KnapsackItem {weight: 30, value: 100},
+            KnapsackItem {weight: 4, value: 2}];
+        let solution = solve_knapsack_problem(&items, 18);
+        assert_eq!(vec![&items[1], &items[3]], solution);
+    }
+
+    #[test]
+    fn test_knapsack_one_big_one_is_the_best() {
+        let items = vec![
+            KnapsackItem {weight: 10, value: 20},
+            KnapsackItem {weight: 10, value: 30},
+            KnapsackItem {weight: 30, value: 200},
+            KnapsackItem {weight: 10, value: 50}];
+        let solution = solve_knapsack_problem(&items, 30);
+        assert_eq!(vec![&items[2]], solution);
+    }
+
+    #[test]
+    fn test_knapsack_all_fit() {
+        let items = vec![
+            KnapsackItem {weight: 10, value: 20},
+            KnapsackItem {weight: 10, value: 30},
+            KnapsackItem {weight: 30, value: 200},
+            KnapsackItem {weight: 10, value: 50}];
+        let solution = solve_knapsack_problem(&items, 100);
+        assert_eq!(vec![&items[0], &items[1], &items[2], &items[3]], solution);
+    }
 }
