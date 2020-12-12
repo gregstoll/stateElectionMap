@@ -32,15 +32,43 @@ type ElectionResult = Vec<ElectionStateResultMargin>;
 type AllElectionResults = Vec<(u32, ElectionResult)>;
 
 fn main() {
-    let data = read_data();
-    match data {
-        Ok(entries) => {
-            println!("Got {:?} ev entries", entries.0.len());
-            println!("Got {:?} result entries", entries.1.len());
-            println!("{:?}", entries.0[6]);
-        },
-        Err(e) => println!("ERROR: {:?}", e),
+    let entries = read_data().unwrap();
+    /*println!("Got {:?} result entries", entries.0.len());
+    println!("Got {:?} ev entries", entries.1.len());*/
+    for election_result in entries.0 {
+        let year = election_result.0;
+        println!("Year {}", year);
+        let electoral_votes = get_electoral_votes_for_year(&entries.1, year);
+        create_knapsack_inputs(&election_result.1, electoral_votes);
     }
+}
+
+fn create_knapsack_inputs(election_result: &ElectionResult, electoral_votes: &ElectoralVoteMap) {
+    // first, figure out who won.
+    let mut d_votes: usize = 0;
+    let mut r_votes: usize = 0;
+    for margin in election_result {
+        let ev = usize::from(*electoral_votes.get(&margin.state_code).unwrap());
+        if margin.d_margin > 0 {
+            d_votes += ev;
+        }
+        else {
+            r_votes += ev;
+        }
+    }
+    println!("d: {} r: {}", d_votes, r_votes);
+}
+
+fn get_electoral_votes_for_year(electoral_votes: &AllElectoralVotes, year: u32) -> &ElectoralVoteMap {
+    if year < electoral_votes[0].0 {
+        panic!("Year too early: {} is earlier than {}", year, electoral_votes[0].0);
+    }
+    for i in 1..electoral_votes.len() {
+        if year < electoral_votes[i].0 {
+            return &electoral_votes[i-1].1;
+        }
+    }
+    return &electoral_votes[electoral_votes.len() - 1].1;
 }
 
 fn read_data() -> Result<(AllElectionResults, AllElectoralVotes), Error> {
@@ -218,5 +246,14 @@ mod tests {
             KnapsackItem {weight: 10, value: 50}];
         let solution = solve_knapsack_problem(&items, 100);
         assert_eq!(vec![&items[0], &items[1], &items[2], &items[3]], solution);
+    }
+
+    #[test]
+    fn test_electoral_votes_for_year() {
+        let data = read_data().unwrap();
+        let knownTXValues  = [(1972, 26), (1976, 26), (1980, 26), (1984, 29), (1988, 29), (1992, 32), (1996, 32), (2000, 32), (2004, 34), (2008, 34), (2012, 38), (2016, 38), (2020, 38)];
+        for (year, knownTXValue) in knownTXValues.iter() {
+            assert_eq!((year, knownTXValue), (year, get_electoral_votes_for_year(&data.1, *year).get("TX").unwrap()));
+        }
     }
 }
