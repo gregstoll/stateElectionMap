@@ -43,7 +43,7 @@ const cleanElectoralVoteResults = (d: any): [string, number] => {
 };
 
 export const MIN_YEAR = 1972;
-export const MAX_YEAR = 2016;
+export const MAX_YEAR = 2020;
 export const YEAR_STEP = 4;
 
 const MIN_ELECTORAL_VOTE_YEAR = 1971;
