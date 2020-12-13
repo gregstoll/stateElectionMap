@@ -347,11 +347,11 @@ class App extends React.Component<{}, AppState> {
             minVotesData.sort();
             const yearStateResults = this.state.electionData.get(this.state.year).stateResults;
             const minVotesNumber = minVotesData.
-                map(stateCode => Math.abs(yearStateResults.get(stateCode).dCount - yearStateResults.get(stateCode).rCount)).
+                map(stateCode => DataUtils.getNumberOfVotesToChangeWinner(yearStateResults.get(stateCode))).
                 reduce((a, b) => a + b, 0);
             const minVoteListItems = minVotesData.
                 map(stateCode => <li key={stateCode} className="listInColumn">
-                    {this.state.stateInfos.codeToStateName.get(stateCode).name}: {Math.abs(yearStateResults.get(stateCode).dCount - yearStateResults.get(stateCode).rCount).toLocaleString()} votes
+                    {this.state.stateInfos.codeToStateName.get(stateCode).name}: {DataUtils.getNumberOfVotesToChangeWinner(yearStateResults.get(stateCode)).toLocaleString()} votes
                     ({DataUtils.getElectoralVotesForState(this.state.electoralVoteData, stateCode, this.state.year)} EV)
                     </li>)
             belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}

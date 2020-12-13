@@ -91,7 +91,8 @@ fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_vot
     states_for_winner.map(|result|
          (KnapsackItem {
              weight: usize::from(*electoral_votes.get(&result.state_code).unwrap()),
-             value: usize::try_from(result.d_margin.abs()).unwrap()
+             // + 1 to change the winner (instead of a D/R tie)
+             value: usize::try_from(result.d_margin.abs() + 1).unwrap()
          }, result)
     ).collect()
 }

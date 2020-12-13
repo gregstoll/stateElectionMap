@@ -102,6 +102,11 @@ test('getClosestStateByPercentage', async () => {
     }
 });
 
+test('getNumberOfVotesToChangeWinner', () => {
+    expect(DataUtils.getNumberOfVotesToChangeWinner({dCount: 10, rCount: 20, stateCode: "TX", totalCount: 35})).toEqual(11);
+    expect(DataUtils.getNumberOfVotesToChangeWinner({dCount: 20, rCount: 10, stateCode: "TX", totalCount: 35})).toEqual(11);
+});
+
 test('textFromDAdvantage', () => {
     expect(Utils.textFromDAdvantage(0)).toEqual("Even");
     expect(Utils.textFromDAdvantage(1)).toEqual("D+1.0%");

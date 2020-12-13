@@ -137,6 +137,10 @@ export class Utils {
 }
 
 export class DataUtils {
+    public static getNumberOfVotesToChangeWinner(stateResult: ElectionStateResult): number {
+        // + 1 to change the winner (instead of a D/R tie)
+        return Math.abs(stateResult.dCount - stateResult.rCount) + 1;
+    }
     public static getElectoralVoteDataForYear(data: ElectoralVoteData, year: number): Map<string, number> {
         if (year < data[0][0]) {
             throw `Year ${year} is too early for data, which has earliest year ${data[0][0]}`;
