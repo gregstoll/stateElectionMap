@@ -1,6 +1,7 @@
 extern crate csv;
+extern crate json;
 use serde::Deserialize;
-use std::{collections::HashMap, path::{Path, PathBuf}};
+use std::{collections::HashMap, fs::File, io::Write, path::{Path, PathBuf}};
 use std::convert::TryFrom;
 use std::fs;
 use std::io::Error;
@@ -33,6 +34,7 @@ type AllElectionResults = Vec<(u32, ElectionResult)>;
 
 fn main() {
     let entries = read_data().unwrap();
+    let mut json_results = json::object! {};
     for election_result in entries.0 {
         let year = election_result.0;
         println!("Year {}", year);
@@ -46,16 +48,26 @@ fn main() {
         };
         let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), necessary_electoral_votes - 1).unwrap();
         let mut solution_index = 0;
+        let mut min_states= vec![];
         for input_index in 0..knapsack_inputs.len() {
             if solution_index >= solution.len() || solution[solution_index] != input_index {
                 // no match
+                min_states.push(knapsack_inputs[input_index].1);
                 println!("{:?}", knapsack_inputs[input_index]);
             }
             else {
                 solution_index += 1;
             }
         }
+        json_results[year.to_string()] =
+            json::JsonValue::Array(min_states.iter().map(|&s| json::JsonValue::String(s.state_code.to_string())).collect());
     }
+    let json_string = json::stringify_pretty(json_results, 4);
+    println!("{}", json_string);
+    let mut results_path = PathBuf::from(DATA_DIR);
+    results_path.push("min_votes_to_change_result.json");
+    let mut file = File::create(&results_path).unwrap();
+    write!(&mut file, "{}", json_string).unwrap();
 }
 
 fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_votes: &'_ ElectoralVoteMap) -> Vec<(KnapsackItem, &'a ElectionStateResultMargin)> {
