@@ -8,6 +8,7 @@ test('data looks reasonable', async () => {
     // sigh, there are territories in here
     expect(data.stateInfos.codeToStateName.size).toBeGreaterThanOrEqual(51);
     expect(data.electionData.get(2016).nationalDAdvantage).toBeCloseTo(2.1, 2);
+    expect(data.minVotesToChangeResultData.get(2000)).toStrictEqual(["FL"]);
 });
 
 test('calculate electoral votes by state correctly', async () => {
@@ -162,6 +163,7 @@ function setupFetchMock() {
           url: filePath,
           redirected: false,
           ok: true,
-          text: () => Promise.resolve(data)});
+          text: () => Promise.resolve(data),
+          json: () => Promise.resolve(JSON.parse(data))});
   }
 }

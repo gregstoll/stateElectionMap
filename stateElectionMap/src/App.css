@@ -6,6 +6,14 @@
     margin: 0 auto;
 }
 
+.listInColumn {
+    margin: 0 0 0 20px;
+}
+
+.listInColumn li {
+    text-align: left;
+}
+
 .App-logo {
   animation: App-logo-spin infinite 20s linear;
   height: 40vmin;

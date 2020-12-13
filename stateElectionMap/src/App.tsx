@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Button } from 'semantic-ui-react';
 import * as _ from 'lodash';
-import { loadAllData, DataCollection, StateInfos, ElectionData, ElectionStateResult, ElectoralVoteData, MIN_YEAR, MAX_YEAR, YEAR_STEP, DataUtils, Utils } from './DataHandling';
+import { loadAllData, DataCollection, StateInfos, ElectionData, ElectoralVoteData, MinVotesToChangeResultData, MIN_YEAR, MAX_YEAR, YEAR_STEP, DataUtils, Utils } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
 import { LineChart, BarChart } from 'react-chartkick';
 import ReactChartkick from 'react-chartkick';
@@ -22,6 +22,7 @@ interface AppState {
     stateInfos: StateInfos,
     electionData: ElectionData,
     electoralVoteData: ElectoralVoteData,
+    minVotesToChangeResultData: MinVotesToChangeResultData,
     haveUpdatedFromHash: boolean,
     loadError: string
 }
@@ -35,6 +36,7 @@ class App extends React.Component<{}, AppState> {
         stateInfos: null,
         electionData: null,
         electoralVoteData: null,
+        minVotesToChangeResultData: null,
         haveUpdatedFromHash: false,
         loadError: undefined
     };
@@ -334,17 +336,34 @@ class App extends React.Component<{}, AppState> {
                         }}
                         />;
             }
-            const evText = results.dElectoralVotes > results.rElectoralVotes ?
-                `Electoral votes: D ${results.dElectoralVotes} - R ${results.rElectoralVotes}` :
-                `Electoral votes: R ${results.rElectoralVotes} - D ${results.dElectoralVotes}`;
+            const winnerText = results.dElectoralVotes > results.rElectoralVotes ? "D" : "R";
+            const loserText = results.dElectoralVotes > results.rElectoralVotes ? "R" : "D";
+            const winnerVotes = Math.max(results.dElectoralVotes, results.rElectoralVotes);
+            const loserVotes = Math.min(results.dElectoralVotes, results.rElectoralVotes);
+            const evText = `Electoral votes: ${winnerText} ${winnerVotes} - ${loserText} ${loserVotes}`;
             const tippingPointState = DataUtils.getTippingPointState(this.state.electoralVoteData, this.state.electionData, this.state.year);
             const closestState = DataUtils.getClosestStateByPercentage(this.state.electionData, this.state.year);
+            let minVotesData = this.state.minVotesToChangeResultData.get(this.state.year);
+            minVotesData.sort();
+            const yearStateResults = this.state.electionData.get(this.state.year).stateResults;
+            const minVotesNumber = minVotesData.
+                map(stateCode => Math.abs(yearStateResults.get(stateCode).dCount - yearStateResults.get(stateCode).rCount)).
+                reduce((a, b) => a + b, 0);
+            const minVoteListItems = minVotesData.
+                map(stateCode => <li key={stateCode} className="listInColumn">
+                    {this.state.stateInfos.codeToStateName.get(stateCode).name}: {Math.abs(yearStateResults.get(stateCode).dCount - yearStateResults.get(stateCode).rCount).toLocaleString()} votes
+                    ({DataUtils.getElectoralVotesForState(this.state.electoralVoteData, stateCode, this.state.year)} EV)
+                    </li>)
             belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}
                 <br/>
                 Tipping point state: {this.state.stateInfos.codeToStateName.get(tippingPointState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(tippingPointState))}
                 <br/>
                 Closest state (by percentage): {this.state.stateInfos.codeToStateName.get(closestState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(closestState))}
                 <br/>
+                Minimum number of additional {loserText} votes so {loserText} would have won: {minVotesNumber.toLocaleString()}
+                <ul className="listInColumn">
+                    {minVoteListItems}
+                </ul>
                 {barChart}
                 </div>;
         }

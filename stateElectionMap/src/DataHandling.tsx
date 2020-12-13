@@ -52,6 +52,7 @@ const ELECTORAL_VOTE_YEAR_STEP = 10;
 
 export type ElectionData = Map<number, ElectionYearData>;
 export type ElectoralVoteData = Array<[number, Map<string, number>]>;
+export type MinVotesToChangeResultData = Map<number, Array<string>>;
 
 export interface ElectionYearData {
     stateResults: Map<string, ElectionStateResult>,
@@ -61,7 +62,8 @@ export interface ElectionYearData {
 export interface DataCollection {
     stateInfos: StateInfos,
     electionData: ElectionData,
-    electoralVoteData: ElectoralVoteData
+    electoralVoteData: ElectoralVoteData,
+    minVotesToChangeResultData: MinVotesToChangeResultData
 };
 
 export interface TotalElectoralVoteResult {
@@ -338,10 +340,17 @@ export const loadAllData = async (): Promise<DataCollection> => {
         }
         electoralVoteData.push([year, yearVoteData]);
     }
+    // Sigh, could use fetch() here but d3 does the path resolving like we're expecting
+    let minVotesJson = await d3.json('data/min_votes_to_change_result.json');
+    let minVotesData = new Map<number, Array<string>>();
+    for (let year of Object.keys(minVotesJson)) {
+        minVotesData.set(parseInt(year, 10), minVotesJson[year]);
+    }
     return {
         stateInfos: stateInfos,
         electionData: electionData,
-        electoralVoteData: electoralVoteData
+        electoralVoteData: electoralVoteData,
+        minVotesToChangeResultData: minVotesData
     };
 };
 
