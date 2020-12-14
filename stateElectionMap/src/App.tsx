@@ -282,12 +282,18 @@ class App extends React.Component<{}, AppState> {
                     const dDiff = Utils.dAdvantageFromVotes(thisYearResult, thisYearBaselineAdvantage) - Utils.dAdvantageFromVotes(lastYearElectionData.stateResults.get(state), lastYearBaselineAdvantage);
                     stateDDifferences.push([dDiff, state]);
                 }
+                stateDDifferences.push([this.state.rawResults ? thisYearElectionData.nationalDAdvantage - lastYearElectionData.nationalDAdvantage : 0, "National"]);
                 stateDDifferences.sort((a, b) => b[0] - a[0]);
                 let entries = [];
                 let colors = [];
                 for (let [dDiff, state] of stateDDifferences) {
                     entries.push([state, dDiff]);
-                    colors.push(Utils.colorFromDAdvantage(dDiff));
+                    if (state == "National") {
+                        colors.push("black");
+                    }
+                    else {
+                        colors.push(Utils.colorFromDAdvantage(dDiff));
+                    }
                 }
                 const xTitle = this.state.rawResults ? "Actual change from last election" : "Relative change from last election";
                 const tooltipDescription = this.state.rawResults ? "" : "(relative change)";
