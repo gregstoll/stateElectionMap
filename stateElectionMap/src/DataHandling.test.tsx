@@ -1,4 +1,4 @@
-import { loadAllData, DataUtils, Utils, StateSortingOrder } from './DataHandling';
+import { loadAllData, DataUtils, Utils, StateSortingOrder, MAX_YEAR, YEAR_STEP, MIN_YEAR } from './DataHandling';
 import fs from "fs";
 import path from "path";
 
@@ -9,6 +9,25 @@ test('data looks reasonable', async () => {
     expect(data.stateInfos.codeToStateName.size).toBeGreaterThanOrEqual(51);
     expect(data.electionData.get(2016).nationalDAdvantage).toBeCloseTo(2.1, 2);
     expect(data.minVotesToChangeResultData.get(2000)).toStrictEqual(["FL"]);
+
+    const validStateCodes = new Set(data.stateInfos.codeToStateName.keys());
+
+    for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
+        expect(data.electionData.get(year).stateResults.size).toEqual(51);
+        for (let stateCode of Array.from(data.electionData.get(year).stateResults.keys())) {
+            expect(validStateCodes).toContain(stateCode);
+        }
+        expect(data.minVotesToChangeResultData.get(year).length).toBeGreaterThan(0);
+        for (let stateCode of data.minVotesToChangeResultData.get(year)) {
+            expect(validStateCodes).toContain(stateCode);
+        }
+    }
+    for (let [_, voteData] of data.electoralVoteData) {
+        expect(voteData.size).toEqual(51);
+        for (let stateCode of Array.from(voteData.keys())) {
+            expect(validStateCodes).toContain(stateCode);
+        }
+    }
 });
 
 test('calculate electoral votes by state correctly', async () => {
