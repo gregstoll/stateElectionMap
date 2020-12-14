@@ -1,6 +1,3 @@
-- show "interesting stats" from each year
-  - smallest number of votes changed to swing election (knapsack problem?)
-
 
 --
 - data from 1968 (3rd party stuff)
