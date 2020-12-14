@@ -10,7 +10,8 @@ import Chart from 'chart.js';
 import 'rc-slider/assets/index.css';
 import './App.css';
 
-const SHOW_ELECTORAL_VOTES = process.env.NODE_ENV !== "production";
+const SHOW_ELECTORAL_VOTES = true;
+//const SHOW_ELECTORAL_VOTES = process.env.NODE_ENV !== "production";
 
 ReactChartkick.addAdapter(Chart);
 
