@@ -63,7 +63,7 @@ export type MinVotesToChangeResultData = Map<number, Array<string>>;
 
 export interface ElectionYearData {
     stateResults: Map<string, ElectionStateResult>,
-    allPartResults: Map<string, ElectionStateResult>,
+    districtResults: Map<string, Array<ElectionStateResult>>,
     nationalDAdvantage: number
 }
 
@@ -222,17 +222,35 @@ export class DataUtils {
         }
         return results;
     }
-    private static getTotalDAndRElectoralVotesFromResults(stateResults: Array<ElectionStateResultWithElectoralVotes>, year: number): TotalElectoralVoteResult {
+    private static getTotalDAndRElectoralVotesFromResults(stateResults: Array<ElectionStateResultWithElectoralVotes>, districtResults: Map<string, Array<ElectionStateResult>>, year: number): TotalElectoralVoteResult {
         let dElectoralVotes = 0, rElectoralVotes = 0;
+        let stateDWon = new Map<string, boolean>();
         for (let result of stateResults) {
-            if (result.dCount > result.rCount) {
+            const dWonState = result.dCount > result.rCount;
+            if (dWonState) {
                 dElectoralVotes += result.electoralVotes;
             }
             else {
                 rElectoralVotes += result.electoralVotes;
             }
+            const stateDistrictResults = districtResults.get(result.stateCode);
+            if (stateDistrictResults !== undefined){
+                for (let districtResult of stateDistrictResults) {
+                    const dWonDistrict = districtResult.dCount > districtResult.rCount;
+                    if (dWonDistrict != dWonState) {
+                        if (dWonDistrict) {
+                            dElectoralVotes += 1;
+                            rElectoralVotes -= 1;
+                        }
+                        else {
+                            dElectoralVotes -= 1;
+                            rElectoralVotes += 1;
+                        }
+                    }
+                }
+            }
         }
-        // adjustments for split electoral votes, sigh
+        //TODO - remove this (and year parameter)
         switch(year) {
             case 2008:
                 // NE
@@ -249,7 +267,7 @@ export class DataUtils {
     }
     public static getTotalDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): TotalElectoralVoteResult {
         const results = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.None);
-        return this.getTotalDAndRElectoralVotesFromResults(results, year);
+        return this.getTotalDAndRElectoralVotesFromResults(results, electionData.get(year).districtResults, year);
     }
 }
 
@@ -272,6 +290,20 @@ function validateData(year: number, stateData: ElectionStateResult, stateInfos: 
     }
     if (stateData.rCount > 10 * stateData.dCount) {
         throw `too many r's: ${year} ${stateData.stateCode}`;
+    }
+}
+function validateDistrictData(year: number, districtData: Map<string, ElectionStateResult[]>, stateInfos: StateInfos): void {
+    let a = Array.from(districtData.entries());
+    for (let [stateCode, districtResults] of a) {
+        if (!stateInfos.codeToStateName.has(stateCode)) {
+            throw `invalid state code for district: ${year} ${stateCode}`;
+        }
+        for (let result of districtResults) {
+            if (result === undefined) {
+                throw `missing district result found: ${year} ${stateCode}`;
+            }
+        }
+        // TODO - validate correct number of these somewhere (in a test?)
     }
 }
 
@@ -303,7 +335,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
         let data: ElectionStateResult[] = await electionDataPromises[year];
         let electionYearData: ElectionYearData = {
             stateResults: new Map<string, ElectionStateResult>(),
-            allPartResults: new Map<string, ElectionStateResult>(),
+            districtResults: new Map<string, Array<ElectionStateResult>>(),
             nationalDAdvantage: undefined
         };
         data.forEach(stateResult => {
@@ -312,9 +344,27 @@ export const loadAllData = async (): Promise<DataCollection> => {
             }
             if (Utils.isFullStateResult(stateResult)) {
                 electionYearData.stateResults.set(stateResult.stateCode, stateResult);
+            } else {
+                const rawStateCode = stateResult.stateCode.substring(0, 2);
+                const districtIndex = parseInt(stateResult.stateCode.substring(2), 10);
+                if (districtIndex === undefined || districtIndex === 0) {
+                    throw `Invalid district code for ${year} for ${stateResult.stateCode}`;
+                }
+                let existingDistricts = electionYearData.districtResults.get(rawStateCode);
+                if (existingDistricts === undefined) {
+                    existingDistricts = [];
+                }
+                // districtIndex is 1 indexed
+                while (existingDistricts.length < districtIndex) {
+                    existingDistricts.push(undefined);
+                }
+                existingDistricts[districtIndex - 1] = stateResult;
+                electionYearData.districtResults.set(rawStateCode, existingDistricts);
             }
-            electionYearData.allPartResults.set(stateResult.stateCode, stateResult);
         });
+        if (VALIDATE_DATA) {
+            validateDistrictData(year, electionYearData.districtResults, stateInfos);
+        }
         setNationalDAdvantage(electionYearData);
         if (electionYearData.stateResults.size != 51) {
             throw `Invalid data for year ${year}, got ${electionYearData.stateResults.size} stateResults: ${Array.from(electionYearData.stateResults.keys())}`;
