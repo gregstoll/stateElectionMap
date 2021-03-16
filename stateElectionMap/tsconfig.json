@@ -12,8 +12,13 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "preserve",
-    "lib": ["es2015", "dom", "es2015.promise"]
+    "jsx": "react",
+    "lib": [
+      "es2015",
+      "dom",
+      "es2015.promise"
+    ],
+    "noFallthroughCasesInSwitch": true
   },
   "include": [
     "src"

@@ -100,8 +100,8 @@ class App extends React.Component<{}, AppState> {
     }
 
     setStateFromHash = () => {
-        if (location.hash.length > 1) {
-            let hashPartsArray = location.hash.substr(1).split('&').map(x => x.split('='));
+        if (window.location.hash.length > 1) {
+            let hashPartsArray = window.location.hash.substr(1).split('&').map(x => x.split('='));
             let hashParts = new Map<string, string>();
             for (let i = 0; i < hashPartsArray.length; ++i) {
                 hashParts.set(hashPartsArray[i][0], hashPartsArray[i][1]);

@@ -3,6 +3,13 @@ import _ from 'lodash';
 
 const VALIDATE_DATA = process.env.NODE_ENV !== "production";
 
+function getD3Url(path: string): string{
+    if (process.env.NODE_ENV !== "production") {
+        return "stateElectionMap/" + path;
+    }
+    return path;
+}
+
 export interface StateName {
     code: string,
     id: number,
@@ -273,7 +280,7 @@ function validateElectoralData(year: number, stateVotes: [string, number], state
 
 //TODO - write tests for this method
 export const loadAllData = async (): Promise<DataCollection> => {
-    let stateNamesPromise = d3.tsv('data/us-state-names.tsv', cleanStateName);
+    let stateNamesPromise = d3.tsv(getD3Url('data/us-state-names.tsv'), cleanStateName);
     const stateNames = await stateNamesPromise;
     // Weird way to check for errors
     if (stateNames.columns.length != 3) {
@@ -283,7 +290,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
 
     let electionDataPromises = {};
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
-        electionDataPromises[year] = d3.csv('data/electionResults/' + year + '.csv', cleanElectionResults);
+        electionDataPromises[year] = d3.csv(getD3Url('data/electionResults/' + year + '.csv'), cleanElectionResults);
     }
     let electionData = new Map<number, ElectionYearData>();
     for (let year = MIN_YEAR; year <= MAX_YEAR; year += YEAR_STEP) {
@@ -306,7 +313,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
     }
     let electoralVotePromises = {};
     for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
-        electoralVotePromises[year] = d3.csv('data/electoralVotes/' + year + '.csv', cleanElectoralVoteResults);
+        electoralVotePromises[year] = d3.csv(getD3Url('data/electoralVotes/' + year + '.csv'), cleanElectoralVoteResults);
     }
     let electoralVoteData : ElectoralVoteData = [];
     for (let year = MIN_ELECTORAL_VOTE_YEAR; year <= MAX_ELECTORAL_VOTE_YEAR; year += ELECTORAL_VOTE_YEAR_STEP) {
@@ -332,7 +339,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
         electoralVoteData.push([year, yearVoteData]);
     }
     // Sigh, could use fetch() here but d3 does the path resolving like we're expecting
-    let minVotesJson = await d3.json('data/min_votes_to_change_result.json');
+    let minVotesJson = await d3.json(getD3Url('data/min_votes_to_change_result.json'));
     let minVotesData = new Map<number, Array<string>>();
     for (let year of Object.keys(minVotesJson)) {
         minVotesData.set(parseInt(year, 10), minVotesJson[year]);

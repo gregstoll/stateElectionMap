@@ -173,9 +173,12 @@ test('colorFromDAdvantage', () => {
 function setupFetchMock() {
   // @ts-ignore
   window.fetch = async (info, init) => {
-      const url = info as string;
+      let url = info as string;
+      if (url.startsWith("stateElectionMap/")) {
+          url = url.substr("stateElectionMap/".length);
+      }
       const filePath = path.join(__dirname, "../public/", url);
-      //console.log(filePath); // data/us-state-names.tsv
+      //console.log(filePath); // stateElectionMap/data/us-state-names.tsv
       // could probably do this in a promise or something
       // This trim() call is annoying, but sometimes the files have leading spaces in the header?
       const data : string = fs.readFileSync(filePath, "utf8").trim();
