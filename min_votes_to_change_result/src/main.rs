@@ -26,6 +26,12 @@ struct ElectionStateResultMargin {
     d_margin: i32
 }
 
+#[derive(Debug, PartialEq)]
+struct KnapsackSolution {
+    indices_to_include: Option<Vec<usize>>,
+    value: usize
+}
+
 const DATA_DIR : &str = r"C:\Users\greg\Documents\stateElectionMap\stateElectionMap\public\data";
 type ElectoralVoteMap = HashMap<String, u8>;
 type AllElectoralVotes = Vec<(u32, ElectoralVoteMap)>;
@@ -46,7 +52,8 @@ fn main() {
             1 => (total_electoral_votes-1) / 2 + 1,
             _ => panic!()
         };
-        let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), necessary_electoral_votes - 1).unwrap();
+        let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), necessary_electoral_votes - 1);
+        let solution = solution.indices_to_include.unwrap();
         let mut solution_index = 0;
         let mut min_states= vec![];
         for input_index in 0..knapsack_inputs.len() {
@@ -70,6 +77,8 @@ fn main() {
     write!(&mut file, "{}", json_string).unwrap();
 }
 
+// The knapsack problem here is looking for the maximum number of votes to give the winner
+// if the winner has at most EV/2 - 1 electoral votes (so, just barely losing)
 fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_votes: &'_ ElectoralVoteMap) -> Vec<(KnapsackItem, &'a ElectionStateResultMargin)> {
     // first, figure out who won.
     let mut d_votes: usize = 0;
@@ -120,7 +129,7 @@ struct KnapsackItem {
 }
 
 // Adapted from https://codereview.stackexchange.com/questions/188733/knapsack-0-1-in-rust
-fn solve_knapsack_problem(items: &Vec<KnapsackItem>, max_weight: usize) -> Option<Vec<usize>> {
+fn solve_knapsack_problem(items: &Vec<KnapsackItem>, max_weight: usize) -> KnapsackSolution {
     let mut prev_row : Vec<(usize, Option<Vec<usize>>)> = Vec::new();
     let mut cur_row : Vec<(usize, Option<Vec<usize>>)> = Vec::new();
     for _ in 0..(max_weight + 1) {
@@ -146,7 +155,11 @@ fn solve_knapsack_problem(items: &Vec<KnapsackItem>, max_weight: usize) -> Optio
         }
         prev_row = cur_row.clone();
     }
-    cur_row.last().unwrap().1.clone()
+    let last_row = cur_row.last().unwrap();
+    return KnapsackSolution {
+        indices_to_include: last_row.1.clone(),
+        value: last_row.0
+    }
 }
 
 fn read_all_electoral_votes() -> Result<AllElectoralVotes, Error> {
@@ -233,7 +246,8 @@ mod tests {
             KnapsackItem {weight: 4, value: 2},
             KnapsackItem {weight: 30, value: 100}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(Some(vec![1]), solution);
+        assert_eq!(Some(vec![1]), solution.indices_to_include);
+        assert_eq!(2, solution.value);
     }
 
     #[test]
@@ -243,7 +257,8 @@ mod tests {
             KnapsackItem {weight: 10, value: 20},
             KnapsackItem {weight: 30, value: 100}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(Some(vec![0]), solution);
+        assert_eq!(Some(vec![0]), solution.indices_to_include);
+        assert_eq!(2, solution.value);
     }
 
     #[test]
@@ -253,7 +268,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 100},
             KnapsackItem {weight: 4, value: 2}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(Some(vec![2]), solution);
+        assert_eq!(Some(vec![2]), solution.indices_to_include);
+        assert_eq!(2, solution.value);
     }
 
     #[test]
@@ -264,7 +280,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 100},
             KnapsackItem {weight: 4, value: 2}];
         let solution = solve_knapsack_problem(&items, 18);
-        assert_eq!(Some(vec![1, 3]), solution);
+        assert_eq!(Some(vec![1, 3]), solution.indices_to_include);
+        assert_eq!(32, solution.value);
     }
 
     #[test]
@@ -275,7 +292,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 200},
             KnapsackItem {weight: 10, value: 50}];
         let solution = solve_knapsack_problem(&items, 30);
-        assert_eq!(Some(vec![2]), solution);
+        assert_eq!(Some(vec![2]), solution.indices_to_include);
+        assert_eq!(200, solution.value);
     }
 
     #[test]
@@ -286,7 +304,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 200},
             KnapsackItem {weight: 10, value: 50}];
         let solution = solve_knapsack_problem(&items, 100);
-        assert_eq!(Some(vec![0, 1, 2, 3]), solution);
+        assert_eq!(Some(vec![0, 1, 2, 3]), solution.indices_to_include);
+        assert_eq!(300, solution.value);
     }
 
     #[test]
@@ -297,7 +316,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 200},
             KnapsackItem {weight: 10, value: 50}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(None, solution);
+        assert_eq!(None, solution.indices_to_include);
+        assert_eq!(0, solution.value);
     }
 
     #[test]
