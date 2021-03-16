@@ -213,7 +213,10 @@ fn read_election_result_file(path: &Path) -> Result<Vec<ElectionStateResultEntry
     // skip the header row
     for row in rdr.deserialize().skip(1) {
         let record : ElectionStateResultEntry = row?;
-        result.push(record);
+        // TODO
+        if record.state_code.len() == 2 {
+            result.push(record);
+        }
     }
     Ok(result)
 }
