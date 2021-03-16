@@ -5,7 +5,8 @@ const VALIDATE_DATA = process.env.NODE_ENV !== "production";
 
 function getD3Url(path: string): string{
     if (process.env.NODE_ENV !== "production") {
-        return "stateElectionMap/" + path;
+        console.log(process.env.PUBLIC_URL);
+        return process.env.PUBLIC_URL + '/' + path;
     }
     return path;
 }
@@ -63,6 +64,7 @@ export type MinVotesToChangeResultData = Map<number, Array<string>>;
 
 export interface ElectionYearData {
     stateResults: Map<string, ElectionStateResult>,
+    allPartResults: Map<string, ElectionStateResult>,
     nationalDAdvantage: number
 }
 
@@ -89,6 +91,9 @@ export interface ElectionStateResultWithElectoralVotes extends ElectionStateResu
 }
 
 export class Utils {
+    public static isFullStateResult(stateData: ElectionStateResult): boolean {
+        return stateData.stateCode.length === 2;
+    }
     public static dAdvantageFromVotes(stateData: ElectionStateResult, baselineDAdvantage = 0): number {
         let dAdvantage = ((stateData.dCount - stateData.rCount) * 100.0) / stateData.totalCount;
         return dAdvantage - baselineDAdvantage;
@@ -251,7 +256,9 @@ export class DataUtils {
 
 function validateData(year: number, stateData: ElectionStateResult, stateInfos: StateInfos): void {
     if (!stateInfos.codeToStateName.has(stateData.stateCode)) {
-        throw `invalid state code: ${year} ${stateData.stateCode}`;
+        if (!stateInfos.codeToStateName.has(stateData.stateCode.substring(0, 2))) {
+            throw `invalid state code: ${year} ${stateData.stateCode}`;
+        }
     }
     if (stateData.dCount + stateData.rCount > stateData.totalCount) {
         throw `total is too low: ${year} ${stateData.stateCode}`;
@@ -297,13 +304,17 @@ export const loadAllData = async (): Promise<DataCollection> => {
         let data: ElectionStateResult[] = await electionDataPromises[year];
         let electionYearData: ElectionYearData = {
             stateResults: new Map<string, ElectionStateResult>(),
+            allPartResults: new Map<string, ElectionStateResult>(),
             nationalDAdvantage: undefined
         };
         data.forEach(stateResult => {
             if (VALIDATE_DATA) {
                 validateData(year, stateResult, stateInfos);
             }
-            electionYearData.stateResults.set(stateResult.stateCode, stateResult);
+            if (Utils.isFullStateResult(stateResult)) {
+                electionYearData.stateResults.set(stateResult.stateCode, stateResult);
+            }
+            electionYearData.allPartResults.set(stateResult.stateCode, stateResult);
         });
         setNationalDAdvantage(electionYearData);
         if (electionYearData.stateResults.size != 51) {
