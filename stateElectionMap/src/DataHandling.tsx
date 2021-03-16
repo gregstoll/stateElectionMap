@@ -257,11 +257,6 @@ export class DataUtils {
                 dElectoralVotes += 1;
                 rElectoralVotes -= 1;
                 break;
-            case 2016:
-                // ME
-                dElectoralVotes -= 1;
-                rElectoralVotes += 1;
-                break;
         }
         return {dElectoralVotes: dElectoralVotes, rElectoralVotes: rElectoralVotes};
     }
@@ -292,18 +287,32 @@ function validateData(year: number, stateData: ElectionStateResult, stateInfos: 
         throw `too many r's: ${year} ${stateData.stateCode}`;
     }
 }
-function validateDistrictData(year: number, districtData: Map<string, ElectionStateResult[]>, stateInfos: StateInfos): void {
+function validateDistrictData(year: number, districtData: Map<string, ElectionStateResult[]>, stateData: Map<string, ElectionStateResult>, stateInfos: StateInfos): void {
     let a = Array.from(districtData.entries());
     for (let [stateCode, districtResults] of a) {
         if (!stateInfos.codeToStateName.has(stateCode)) {
             throw `invalid state code for district: ${year} ${stateCode}`;
         }
+        let dVotes = 0, rVotes = 0, totalVotes = 0;
         for (let result of districtResults) {
             if (result === undefined) {
                 throw `missing district result found: ${year} ${stateCode}`;
             }
+            dVotes += result.dCount;
+            rVotes += result.rCount;
+            totalVotes += result.totalCount;
         }
-        // TODO - validate correct number of these somewhere (in a test?)
+        const stateVotes = stateData.get(stateCode);
+        if (Math.abs(dVotes - stateVotes.dCount) > 0.01 * stateVotes.totalCount) {
+            throw `mismatch in D count for districts: ${year} ${stateCode} districts: ${dVotes} state: ${stateVotes.dCount}`;
+        }
+        if (Math.abs(rVotes - stateVotes.rCount) > 0.01 * stateVotes.totalCount) {
+            throw `mismatch in R count for districts: ${year} ${stateCode} districts: ${rVotes} state: ${stateVotes.rCount}`;
+        }
+        if (Math.abs(totalVotes - stateVotes.totalCount) > 0.01 * stateVotes.totalCount) {
+            throw `mismatch in total count for districts: ${year} ${stateCode} districts: ${totalVotes} state: ${stateVotes.totalCount}`;
+        }
+        // TODO - validate correct number of districts somewhere (in a test?)
     }
 }
 
@@ -363,7 +372,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
             }
         });
         if (VALIDATE_DATA) {
-            validateDistrictData(year, electionYearData.districtResults, stateInfos);
+            validateDistrictData(year, electionYearData.districtResults, electionYearData.stateResults, stateInfos);
         }
         setNationalDAdvantage(electionYearData);
         if (electionYearData.stateResults.size != 51) {
