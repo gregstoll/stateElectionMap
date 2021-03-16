@@ -5,7 +5,6 @@ const VALIDATE_DATA = process.env.NODE_ENV !== "production";
 
 function getD3Url(path: string): string{
     if (process.env.NODE_ENV !== "production") {
-        console.log(process.env.PUBLIC_URL);
         return process.env.PUBLIC_URL + '/' + path;
     }
     return path;
