@@ -20,8 +20,15 @@ struct ElectionStateResultEntry {
     total_votes: u32
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ElectionStateResultMargin {
+    state_code: String,
+    d_margin: i32,
+    districts: Option<Vec<ElectionDistrictResultMargin>>
+}
+
+#[derive(Debug, Clone)]
+struct ElectionDistrictResultMargin {
     state_code: String,
     d_margin: i32
 }
@@ -48,7 +55,7 @@ fn main() {
         let knapsack_inputs = create_knapsack_inputs(&election_result.1, electoral_votes);
         let total_electoral_votes: usize = electoral_votes.values().map(|val| *val as usize).sum();
         let necessary_electoral_votes: usize = match total_electoral_votes % 2 {
-            0 => total_electoral_votes / 2,
+            0 => total_electoral_votes / 2 + 1,
             1 => (total_electoral_votes-1) / 2 + 1,
             _ => panic!()
         };
@@ -59,7 +66,7 @@ fn main() {
         for input_index in 0..knapsack_inputs.len() {
             if solution_index >= solution.len() || solution[solution_index] != input_index {
                 // no match
-                min_states.push(knapsack_inputs[input_index].1);
+                min_states.push(knapsack_inputs[input_index].1.clone());
                 println!("{:?}", knapsack_inputs[input_index]);
             }
             else {
@@ -67,7 +74,7 @@ fn main() {
             }
         }
         json_results[year.to_string()] =
-            json::JsonValue::Array(min_states.iter().map(|&s| json::JsonValue::String(s.state_code.to_string())).collect());
+            json::JsonValue::Array(min_states.iter().map(|s| json::JsonValue::String(s.state_code.to_string())).collect());
     }
     let json_string = json::stringify_pretty(json_results, 4);
     println!("{}", json_string);
@@ -79,7 +86,7 @@ fn main() {
 
 // The knapsack problem here is looking for the maximum number of votes to give the winner
 // if the winner has at most EV/2 - 1 electoral votes (so, just barely losing)
-fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_votes: &'_ ElectoralVoteMap) -> Vec<(KnapsackItem, &'a ElectionStateResultMargin)> {
+fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_votes: &'_ ElectoralVoteMap) -> Vec<(KnapsackItem, ElectionStateResultMargin)> {
     // first, figure out who won.
     let mut d_votes: usize = 0;
     let mut r_votes: usize = 0;
@@ -97,13 +104,32 @@ fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_vot
     }
     let d_won = d_votes > r_votes;
     let states_for_winner = election_result.iter().filter(|result| (result.d_margin > 0) == d_won);
-    states_for_winner.map(|result|
+    let mut knapsack_items: Vec<(KnapsackItem, ElectionStateResultMargin)> = states_for_winner.map(|result|
          (KnapsackItem {
              weight: usize::from(*electoral_votes.get(&result.state_code).unwrap()),
              // + 1 to change the winner (instead of a D/R tie)
              value: usize::try_from(result.d_margin.abs() + 1).unwrap()
-         }, result)
-    ).collect()
+         }, result.clone())
+    ).collect();
+    // TODO - this is not complete
+    let states_for_loser = election_result.iter().filter(|result| (result.d_margin < 0) == d_won);
+    for state_for_loser in states_for_loser {
+        if let Some(districts_in_loser_state) = &state_for_loser.districts {
+            for district_in_loser_state in districts_in_loser_state {
+                if (district_in_loser_state.d_margin > 0) == d_won {
+                    knapsack_items.push(
+                        (KnapsackItem {
+                            // single district is worth 1 EV
+                            weight: 1,
+                            // + 1 to change the winner (instead of a D/R tie)
+                            value: usize::try_from(district_in_loser_state.d_margin.abs() + 1).unwrap()
+                        }, ElectionStateResultMargin { state_code: district_in_loser_state.state_code.to_owned(), d_margin: district_in_loser_state.d_margin, districts: None })
+                    );
+                }
+            }
+        }
+    }
+    return knapsack_items;
 }
 
 fn get_electoral_votes_for_year(electoral_votes: &AllElectoralVotes, year: u32) -> &ElectoralVoteMap {
@@ -193,12 +219,32 @@ fn read_all_election_results() -> Result<AllElectionResults, Error> {
         if entry_filename.ends_with(".csv") {
             if let Ok(year) = entry_filename[0..4].parse::<u32>() {
                 let contents = read_election_result_file(&entry.path())?;
-                all_election_results.push((year,
-                    contents.iter().map(|r|
+                let mut election_results : Vec<ElectionStateResultMargin> = 
+                    contents.iter()
+                    .filter(|r| r.state_code.len() == 2)
+                    .map(|r|
                         ElectionStateResultMargin {
                             state_code: r.state_code.clone(),
-                            d_margin: i32::try_from(r.d_votes).unwrap() - i32::try_from(r.r_votes).unwrap()
-                         }).collect()));
+                            d_margin: i32::try_from(r.d_votes).unwrap() - i32::try_from(r.r_votes).unwrap(),
+                            districts: None
+                         })
+                    .collect();
+                // TODO - there's surely a better way to do this
+                for district_result in contents.iter().filter(|r| r.state_code.len() > 2) {
+                    let raw_state_code = &district_result.state_code[..2];
+                    let election_result = election_results.iter_mut().filter(|r| r.state_code == raw_state_code).next().unwrap();
+                    if election_result.districts.is_none() {
+                        election_result.districts = Some(Vec::new());
+                    }
+                    let districts = election_result.districts.as_mut().unwrap();
+                    // 1-indexed in the .csv file, so subtract one
+                    let district_index = district_result.state_code[2..].parse::<usize>().unwrap() - 1;
+                    if districts.len() < district_index + 1 {
+                        districts.resize_with(district_index + 1, || { ElectionDistrictResultMargin { state_code: "".to_owned(), d_margin: 0 }});
+                    }
+                    districts[district_index] = ElectionDistrictResultMargin { state_code: district_result.state_code.clone(), d_margin: i32::try_from(district_result.d_votes).unwrap() - i32::try_from(district_result.r_votes).unwrap() };
+                }
+                all_election_results.push((year, election_results));
             }
         }
     }
@@ -226,10 +272,7 @@ fn read_election_result_file(path: &Path) -> Result<Vec<ElectionStateResultEntry
     // skip the header row
     for row in rdr.deserialize().skip(1) {
         let record : ElectionStateResultEntry = row?;
-        // TODO
-        if record.state_code.len() == 2 {
-            result.push(record);
-        }
+        result.push(record);
     }
     Ok(result)
 }
