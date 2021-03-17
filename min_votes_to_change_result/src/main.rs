@@ -54,12 +54,13 @@ fn main() {
         let electoral_votes = get_electoral_votes_for_year(&entries.1, year);
         let knapsack_inputs = create_knapsack_inputs(&election_result.1, electoral_votes);
         let total_electoral_votes: usize = electoral_votes.values().map(|val| *val as usize).sum();
-        let necessary_electoral_votes: usize = match total_electoral_votes % 2 {
-            0 => total_electoral_votes / 2 + 1,
+        let necessary_electoral_votes_to_change_result: usize = match total_electoral_votes % 2 {
+            0 => total_electoral_votes / 2,
             1 => (total_electoral_votes-1) / 2 + 1,
             _ => panic!()
         };
-        let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), necessary_electoral_votes - 1);
+        let max_weight = total_electoral_votes - necessary_electoral_votes_to_change_result;
+        let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), max_weight);
         let solution = solution.indices_to_include.unwrap();
         let mut solution_index = 0;
         let mut min_states= vec![];
@@ -85,7 +86,7 @@ fn main() {
 }
 
 // The knapsack problem here is looking for the maximum number of votes to give the winner
-// if the winner has at most EV/2 - 1 electoral votes (so, just barely losing)
+// if the winner has at most EV/2 electoral votes (so, just barely losing or tying)
 fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_votes: &'_ ElectoralVoteMap) -> Vec<(KnapsackItem, ElectionStateResultMargin)> {
     // first, figure out who won.
     let mut d_votes: usize = 0;
@@ -104,14 +105,49 @@ fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_vot
     }
     let d_won = d_votes > r_votes;
     let states_for_winner = election_result.iter().filter(|result| (result.d_margin > 0) == d_won);
-    let mut knapsack_items: Vec<(KnapsackItem, ElectionStateResultMargin)> = states_for_winner.map(|result|
-         (KnapsackItem {
-             weight: usize::from(*electoral_votes.get(&result.state_code).unwrap()),
-             // + 1 to change the winner (instead of a D/R tie)
-             value: usize::try_from(result.d_margin.abs() + 1).unwrap()
-         }, result.clone())
-    ).collect();
-    // TODO - this is not complete
+    let mut knapsack_items: Vec<(KnapsackItem, ElectionStateResultMargin)> = Vec::new();
+    for state_for_winner in states_for_winner {
+        match &state_for_winner.districts {
+            None => {
+                knapsack_items.push(
+                    (KnapsackItem {
+                        weight: usize::from(*electoral_votes.get(&state_for_winner.state_code).unwrap()),
+                        // + 1 to change the winner (instead of a D/R tie)
+                        value: usize::try_from(state_for_winner.d_margin.abs() + 1).unwrap()
+                    }, state_for_winner.clone()));
+            },
+            Some(districts) => {
+                // This isn't exactly right because we're double counting the votes to flip a state
+                // and a district. But I don't think the whole state of ME or NE is going to be involved
+                // in a real result.
+                // add whole state
+                knapsack_items.push((KnapsackItem {
+                    // winning statewide is worth 2
+                    weight: 2, 
+                    // + 1 to change the winner (instead of a D/R tie)
+                    value: usize::try_from(state_for_winner.d_margin.abs() + 1).unwrap()
+                },
+                ElectionStateResultMargin {
+                    state_code: state_for_winner.state_code.clone(),
+                    d_margin: state_for_winner.d_margin,
+                    districts: None
+                })); 
+                for district in districts.iter().filter(|d| (d.d_margin > 0) == d_won) {
+                    knapsack_items.push((KnapsackItem {
+                        // winning a district is worth 1
+                        weight: 1, 
+                        // + 1 to change the winner (instead of a D/R tie)
+                        value: usize::try_from(district.d_margin.abs() + 1).unwrap()
+                    },
+                    ElectionStateResultMargin {
+                        state_code: district.state_code.clone(),
+                        d_margin: district.d_margin,
+                        districts: None
+                    })); 
+                }
+            }
+        }
+    }
     let states_for_loser = election_result.iter().filter(|result| (result.d_margin < 0) == d_won);
     for state_for_loser in states_for_loser {
         if let Some(districts_in_loser_state) = &state_for_loser.districts {

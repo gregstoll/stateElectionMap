@@ -367,7 +367,7 @@ class App extends React.Component<{}, AppState> {
                 <br/>
                 Closest state (by percentage): {this.state.stateInfos.codeToStateName.get(closestState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(closestState))}
                 <br/>
-                Minimum number of additional {loserText} votes so {loserText} would have won: {minVotesNumber.toLocaleString()}
+                Minimum number of additional {loserText} votes so {loserText} would have won or tied: {minVotesNumber.toLocaleString()}
                 <ul className="listInColumn">
                     {minVoteListItems}
                 </ul>
