@@ -152,6 +152,16 @@ export class DataUtils {
         // + 1 to change the winner (instead of a D/R tie)
         return Math.abs(stateResult.dCount - stateResult.rCount) + 1;
     }
+    //TODO - add test
+    public static getStateOrDistrictResult(yearData: ElectionYearData, stateOrDistrictCode: string): ElectionStateResult {
+        if (stateOrDistrictCode.length === 2) {
+            return yearData.stateResults.get(stateOrDistrictCode);
+        }
+        const stateCode = stateOrDistrictCode.substring(0, 2);
+        const districtResults = yearData.districtResults.get(stateCode);
+        const index = parseInt(stateOrDistrictCode.substring(2)) - 1;
+        return districtResults[index];
+    }
     public static getElectoralVoteDataForYear(data: ElectoralVoteData, year: number): Map<string, number> {
         if (year < data[0][0]) {
             throw `Year ${year} is too early for data, which has earliest year ${data[0][0]}`;
@@ -177,9 +187,12 @@ export class DataUtils {
         }
         return lowestStateResult;
     }
-    public static getElectoralVotesForState(data: ElectoralVoteData, stateCode: string, year: number): number {
+    public static getElectoralVotesForStateOrDistrict(data: ElectoralVoteData, stateOrDistrictCode: string, year: number): number {
+        if (stateOrDistrictCode.length > 2) {
+            return 1;
+        }
         const electoralVoteData = this.getElectoralVoteDataForYear(data, year);
-        return electoralVoteData.get(stateCode);
+        return electoralVoteData.get(stateOrDistrictCode);
     }
     public static getTippingPointState(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number) : ElectionStateResultWithElectoralVotes {
         let voteData = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.Percentage);

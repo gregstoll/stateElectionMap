@@ -8,7 +8,8 @@ test('data looks reasonable', async () => {
     // sigh, there are territories in here
     expect(data.stateInfos.codeToStateName.size).toBeGreaterThanOrEqual(51);
     expect(data.electionData.get(2016).nationalDAdvantage).toBeCloseTo(2.1, 2);
-    expect(data.minVotesToChangeResultData.get(2000)).toStrictEqual(["FL"]);
+    expect(data.minVotesToChangeResultData.get(2000)["tie"]).toStrictEqual(["FL"]);
+    expect(data.minVotesToChangeResultData.get(2000)["win"]).toStrictEqual(["FL"]);
 
     const validStateCodes = new Set(data.stateInfos.codeToStateName.keys());
 
@@ -17,9 +18,13 @@ test('data looks reasonable', async () => {
         for (let stateCode of Array.from(data.electionData.get(year).stateResults.keys())) {
             expect(validStateCodes).toContain(stateCode);
         }
-        expect(data.minVotesToChangeResultData.get(year).length).toBeGreaterThan(0);
-        for (let stateCode of data.minVotesToChangeResultData.get(year)) {
-            expect(validStateCodes).toContain(stateCode);
+        expect(data.minVotesToChangeResultData.get(year)["win"].length).toBeGreaterThan(0);
+        for (let stateCode of data.minVotesToChangeResultData.get(year)["win"]) {
+            expect(validStateCodes).toContain(stateCode.substring(0, 2));
+        }
+        expect(data.minVotesToChangeResultData.get(year)["tie"].length).toBeGreaterThan(0);
+        for (let stateCode of data.minVotesToChangeResultData.get(year)["tie"]) {
+            expect(validStateCodes).toContain(stateCode.substring(0, 2));
         }
     }
     for (let [_, voteData] of data.electoralVoteData) {
@@ -35,7 +40,7 @@ test('calculate electoral votes by state correctly', async () => {
     const data = await loadAllData();
     const knownTXValues : Array<[number, number]> = [[1972, 26], [1976, 26], [1980, 26], [1984, 29], [1988, 29], [1992, 32], [1996, 32], [2000, 32], [2004, 34], [2008, 34], [2012, 38], [2016, 38], [2020, 38]];
     for (let [year, evs] of knownTXValues) {
-        const actualEvs = DataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year);
+        const actualEvs = DataUtils.getElectoralVotesForStateOrDistrict(data.electoralVoteData, "TX", year);
         // assert on the year here so it's clear what year failed.  Is there a better way to do this?
         expect([year, evs]).toStrictEqual([year, actualEvs]);
     }

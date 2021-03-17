@@ -350,16 +350,18 @@ class App extends React.Component<{}, AppState> {
             const evText = `Electoral votes: ${winnerText} ${winnerVotes} - ${loserText} ${loserVotes}`;
             const tippingPointState = DataUtils.getTippingPointState(this.state.electoralVoteData, this.state.electionData, this.state.year);
             const closestState = DataUtils.getClosestStateByPercentage(this.state.electionData, this.state.year);
-            let minVotesData = this.state.minVotesToChangeResultData.get(this.state.year);
+            //TODO
+            let minVotesData = this.state.minVotesToChangeResultData.get(this.state.year)["win"];
             minVotesData.sort();
-            const yearStateResults = this.state.electionData.get(this.state.year).stateResults;
+            const yearResults = this.state.electionData.get(this.state.year);
             const minVotesNumber = minVotesData.
-                map(stateCode => DataUtils.getNumberOfVotesToChangeWinner(yearStateResults.get(stateCode))).
+                map(stateOrDistrictCode => DataUtils.getNumberOfVotesToChangeWinner(DataUtils.getStateOrDistrictResult(yearResults, stateOrDistrictCode))).
                 reduce((a, b) => a + b, 0);
+            // TODO - show district number
             const minVoteListItems = minVotesData.
                 map(stateCode => <li key={stateCode} className="listInColumn">
-                    {this.state.stateInfos.codeToStateName.get(stateCode).name}: {DataUtils.getNumberOfVotesToChangeWinner(yearStateResults.get(stateCode)).toLocaleString()} votes
-                    ({DataUtils.getElectoralVotesForState(this.state.electoralVoteData, stateCode, this.state.year)} EV)
+                    {this.state.stateInfos.codeToStateName.get(stateCode.substring(0, 2)).name}: {DataUtils.getNumberOfVotesToChangeWinner(DataUtils.getStateOrDistrictResult(yearResults, stateCode)).toLocaleString()} votes
+                    ({DataUtils.getElectoralVotesForStateOrDistrict(this.state.electoralVoteData, stateCode, this.state.year)} EV)
                     </li>)
             belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}
                 <br/>

@@ -1,5 +1,6 @@
 extern crate csv;
 extern crate json;
+use json::JsonValue;
 use serde::Deserialize;
 use std::{collections::HashMap, fs::File, io::Write, path::{Path, PathBuf}};
 use std::convert::TryFrom;
@@ -54,28 +55,18 @@ fn main() {
         let electoral_votes = get_electoral_votes_for_year(&entries.1, year);
         let knapsack_inputs = create_knapsack_inputs(&election_result.1, electoral_votes);
         let total_electoral_votes: usize = electoral_votes.values().map(|val| *val as usize).sum();
-        let necessary_electoral_votes_to_change_result: usize = match total_electoral_votes % 2 {
-            0 => total_electoral_votes / 2,
-            1 => (total_electoral_votes-1) / 2 + 1,
-            _ => panic!()
-        };
-        let max_weight = total_electoral_votes - necessary_electoral_votes_to_change_result;
-        let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), max_weight);
-        let solution = solution.indices_to_include.unwrap();
-        let mut solution_index = 0;
-        let mut min_states= vec![];
-        for input_index in 0..knapsack_inputs.len() {
-            if solution_index >= solution.len() || solution[solution_index] != input_index {
-                // no match
-                min_states.push(knapsack_inputs[input_index].1.clone());
-                println!("{:?}", knapsack_inputs[input_index]);
-            }
-            else {
-                solution_index += 1;
-            }
+        if total_electoral_votes % 2 == 1 {
+            let necessary_electoral_votes_to_win: usize = (total_electoral_votes - 1) / 2 + 1;
+            json_results[year.to_string()]["win"] =
+                calculate_knapsack_results_for_json(&knapsack_inputs, total_electoral_votes, necessary_electoral_votes_to_win);
         }
-        json_results[year.to_string()] =
-            json::JsonValue::Array(min_states.iter().map(|s| json::JsonValue::String(s.state_code.to_string())).collect());
+        else {
+            let necessary_electoral_votes_to_tie: usize = total_electoral_votes / 2;
+            json_results[year.to_string()]["tie"] =
+                calculate_knapsack_results_for_json(&knapsack_inputs, total_electoral_votes, necessary_electoral_votes_to_tie);
+            json_results[year.to_string()]["win"] =
+                calculate_knapsack_results_for_json(&knapsack_inputs, total_electoral_votes, necessary_electoral_votes_to_tie + 1);
+        }
     }
     let json_string = json::stringify_pretty(json_results, 4);
     println!("{}", json_string);
@@ -83,6 +74,27 @@ fn main() {
     results_path.push("min_votes_to_change_result.json");
     let mut file = File::create(&results_path).unwrap();
     write!(&mut file, "{}", json_string).unwrap();
+}
+
+fn calculate_knapsack_results_for_json(knapsack_inputs: &[(KnapsackItem, ElectionStateResultMargin)],
+    total_electoral_votes: usize, necessary_votes_for_winner: usize) -> JsonValue {
+    let max_weight = total_electoral_votes - necessary_votes_for_winner;
+    let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), max_weight);
+    let solution = solution.indices_to_include.unwrap();
+    let mut solution_index = 0;
+    let mut min_states= vec![];
+    for input_index in 0..knapsack_inputs.len() {
+        if solution_index >= solution.len() || solution[solution_index] != input_index {
+            // no match
+            min_states.push(knapsack_inputs[input_index].1.clone());
+            println!("{:?}", knapsack_inputs[input_index]);
+        }
+        else {
+            solution_index += 1;
+        }
+    }
+
+    JsonValue::Array(min_states.iter().map(|s| JsonValue::String(s.state_code.to_string())).collect())
 }
 
 // The knapsack problem here is looking for the maximum number of votes to give the winner
