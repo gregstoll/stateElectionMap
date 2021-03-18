@@ -175,6 +175,38 @@ class App extends React.Component<{}, AppState> {
         return error;
     }
 
+    minVoteArraysEqual = (array1: string[], array2: string[]): boolean => {
+        if (array1.length !== array1.length) {
+            return false;
+        }
+        for (let i = 0; i < array1.length; ++i) {
+            if (array1[i] !== array2[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    generateMinVoteSection = (minVoteStates: string[], description: string, loserText: string) => {
+        const yearResults = this.state.electionData.get(this.state.year);
+        const minVotesNumber = minVoteStates.
+            map(stateOrDistrictCode => DataUtils.getNumberOfVotesToChangeWinner(DataUtils.getStateOrDistrictResult(yearResults, stateOrDistrictCode))).
+            reduce((a, b) => a + b, 0);
+        const minVoteListItems = minVoteStates.
+            map(stateOrDistrictCode => <li key={stateOrDistrictCode} className="listInColumn">
+                {DataUtils.getStateOrDistrictName(this.state.stateInfos, stateOrDistrictCode)}: {DataUtils.getNumberOfVotesToChangeWinner(DataUtils.getStateOrDistrictResult(yearResults, stateOrDistrictCode)).toLocaleString()} votes
+                ({DataUtils.getElectoralVotesForStateOrDistrict(this.state.electoralVoteData, stateOrDistrictCode, this.state.year)} EV)
+                </li>);
+        return <div>
+            Minimum number of additional {loserText} votes so {loserText} would have {description}: {minVotesNumber.toLocaleString()}
+            <ul className="listInColumn">
+                {minVoteListItems}
+            </ul>
+        </div>;
+
+
+    }
+
     render = () => {
         if (this.state.loadError !== undefined) {
             return <div className="App" style={{ backgroundColor: "red"}}>{this.errorStringFromError(this.state.loadError)}</div>;
@@ -351,27 +383,24 @@ class App extends React.Component<{}, AppState> {
             const tippingPointState = DataUtils.getTippingPointState(this.state.electoralVoteData, this.state.electionData, this.state.year);
             const closestState = DataUtils.getClosestStateByPercentage(this.state.electionData, this.state.year);
             //TODO
-            let minVotesData = this.state.minVotesToChangeResultData.get(this.state.year)["win"];
-            minVotesData.sort();
-            const yearResults = this.state.electionData.get(this.state.year);
-            const minVotesNumber = minVotesData.
-                map(stateOrDistrictCode => DataUtils.getNumberOfVotesToChangeWinner(DataUtils.getStateOrDistrictResult(yearResults, stateOrDistrictCode))).
-                reduce((a, b) => a + b, 0);
-            const minVoteListItems = minVotesData.
-                map(stateOrDistrictCode => <li key={stateOrDistrictCode} className="listInColumn">
-                    {DataUtils.getStateOrDistrictName(this.state.stateInfos, stateOrDistrictCode)}: {DataUtils.getNumberOfVotesToChangeWinner(DataUtils.getStateOrDistrictResult(yearResults, stateOrDistrictCode)).toLocaleString()} votes
-                    ({DataUtils.getElectoralVotesForStateOrDistrict(this.state.electoralVoteData, stateOrDistrictCode, this.state.year)} EV)
-                    </li>)
+            const minVotesData = this.state.minVotesToChangeResultData.get(this.state.year);
+            let winVotesData = minVotesData["win"];
+            winVotesData.sort();
+            let tieVotesData = minVotesData["tie"];
+            tieVotesData.sort();
+            const winVoteSection = this.generateMinVoteSection(winVotesData, "won", loserText);
+            let tieVoteSection = undefined;
+            if (!this.minVoteArraysEqual(winVotesData, tieVotesData)) {
+                tieVoteSection = this.generateMinVoteSection(tieVotesData, "tied", loserText);
+            }
             belowMapSection = <div style={{ width: 500 }} className="centerFixedWidth">{evText}
                 <br/>
                 Tipping point state: {this.state.stateInfos.codeToStateName.get(tippingPointState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(tippingPointState))}
                 <br/>
                 Closest state (by percentage): {this.state.stateInfos.codeToStateName.get(closestState.stateCode).name} {Utils.textFromDAdvantage(Utils.dAdvantageFromVotes(closestState))}
                 <br/>
-                Minimum number of additional {loserText} votes so {loserText} would have won or tied: {minVotesNumber.toLocaleString()}
-                <ul className="listInColumn">
-                    {minVoteListItems}
-                </ul>
+                {tieVoteSection}
+                {winVoteSection}
                 {barChart}
                 </div>;
         }
