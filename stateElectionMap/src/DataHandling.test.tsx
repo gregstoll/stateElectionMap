@@ -18,6 +18,16 @@ test('data looks reasonable', async () => {
         for (let stateCode of Array.from(data.electionData.get(year).stateResults.keys())) {
             expect(validStateCodes).toContain(stateCode);
         }
+        const electoralVoteData = DataUtils.getElectoralVoteDataForYear(data.electoralVoteData, year);
+        for (let stateCode of Array.from(data.electionData.get(year).districtResults.keys())) {
+            const districtsInfo = data.electionData.get(year).districtResults.get(stateCode);
+            expect(validStateCodes).toContain(stateCode);
+            const expectedDistricts = electoralVoteData.get(stateCode) - 2;
+            expect([expectedDistricts, year, stateCode]).toStrictEqual([districtsInfo.length, year, stateCode]);
+            for (let i = 0; i < districtsInfo.length; ++i) {
+                expect(districtsInfo[i]).toBeDefined();
+            }
+        }
         expect(data.minVotesToChangeResultData.get(year)["win"].length).toBeGreaterThan(0);
         for (let stateCode of data.minVotesToChangeResultData.get(year)["win"]) {
             expect(validStateCodes).toContain(stateCode.substring(0, 2));
@@ -124,6 +134,25 @@ test('getClosestStateByPercentage', async () => {
         const closest = DataUtils.getClosestStateByPercentage(data.electionData, year);
         expect([year, closest.stateCode]).toStrictEqual([year, closestState]);
     }
+});
+
+test('getStateOrDistrictResult', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    const neData = DataUtils.getStateOrDistrictResult(data.electionData.get(2016), "NE");
+    expect([284494, 495961, 844227, "NE"]).toStrictEqual([neData.dCount, neData.rCount, neData.totalCount, neData.stateCode]);
+    const ne1Data = DataUtils.getStateOrDistrictResult(data.electionData.get(2016), "NE1");
+    expect([100126, 158626, 282338, "NE1"]).toStrictEqual([ne1Data.dCount, ne1Data.rCount, ne1Data.totalCount, ne1Data.stateCode]);
+    const ne3Data = DataUtils.getStateOrDistrictResult(data.electionData.get(2016), "NE3");
+    expect([53290, 199657, 270039, "NE3"]).toStrictEqual([ne3Data.dCount, ne3Data.rCount, ne3Data.totalCount, ne3Data.stateCode]);
+});
+
+test('getStateOrDistrictName', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    expect("Nebraska").toStrictEqual(DataUtils.getStateOrDistrictName(data.stateInfos, "NE"));
+    expect("Nebraska-1").toStrictEqual(DataUtils.getStateOrDistrictName(data.stateInfos, "NE1"));
+    expect("Texas-17").toStrictEqual(DataUtils.getStateOrDistrictName(data.stateInfos, "TX17"));
 });
 
 test('getNumberOfVotesToChangeWinner', () => {
