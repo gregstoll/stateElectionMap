@@ -152,7 +152,6 @@ export class DataUtils {
         // + 1 to change the winner (instead of a D/R tie)
         return Math.abs(stateResult.dCount - stateResult.rCount) + 1;
     }
-    //TODO - add test
     public static getStateOrDistrictResult(yearData: ElectionYearData, stateOrDistrictCode: string): ElectionStateResult {
         if (stateOrDistrictCode.length === 2) {
             return yearData.stateResults.get(stateOrDistrictCode);
@@ -161,6 +160,14 @@ export class DataUtils {
         const districtResults = yearData.districtResults.get(stateCode);
         const index = parseInt(stateOrDistrictCode.substring(2)) - 1;
         return districtResults[index];
+    }
+    public static getStateOrDistrictName(stateInfos: StateInfos, stateOrDistrictCode: string): string {
+        let s = stateInfos.codeToStateName.get(stateOrDistrictCode.substring(0, 2)).name;
+        if (stateOrDistrictCode.length === 2) {
+            return s;
+        }
+        s += "-" + stateOrDistrictCode.substring(2);
+        return s;
     }
     public static getElectoralVoteDataForYear(data: ElectoralVoteData, year: number): Map<string, number> {
         if (year < data[0][0]) {
@@ -325,7 +332,6 @@ function validateDistrictData(year: number, districtData: Map<string, ElectionSt
         if (Math.abs(totalVotes - stateVotes.totalCount) > 0.01 * stateVotes.totalCount) {
             throw `mismatch in total count for districts: ${year} ${stateCode} districts: ${totalVotes} state: ${stateVotes.totalCount}`;
         }
-        // TODO - validate correct number of districts somewhere (in a test?)
     }
 }
 
@@ -338,7 +344,6 @@ function validateElectoralData(year: number, stateVotes: [string, number], state
     }
 }
 
-//TODO - write tests for this method
 export const loadAllData = async (): Promise<DataCollection> => {
     let stateNamesPromise = d3.tsv(getD3Url('data/us-state-names.tsv'), cleanStateName);
     const stateNames = await stateNamesPromise;
