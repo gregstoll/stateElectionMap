@@ -242,7 +242,7 @@ export class DataUtils {
         }
         return results;
     }
-    private static getTotalDAndRElectoralVotesFromResults(stateResults: Array<ElectionStateResultWithElectoralVotes>, districtResults: Map<string, Array<ElectionStateResult>>, year: number): TotalElectoralVoteResult {
+    private static getTotalDAndRElectoralVotesFromResults(stateResults: Array<ElectionStateResultWithElectoralVotes>, districtResults: Map<string, Array<ElectionStateResult>>): TotalElectoralVoteResult {
         let dElectoralVotes = 0, rElectoralVotes = 0;
         let stateDWon = new Map<string, boolean>();
         for (let result of stateResults) {
@@ -270,19 +270,11 @@ export class DataUtils {
                 }
             }
         }
-        //TODO - remove this (and year parameter)
-        switch(year) {
-            case 2008:
-                // NE
-                dElectoralVotes += 1;
-                rElectoralVotes -= 1;
-                break;
-        }
         return {dElectoralVotes: dElectoralVotes, rElectoralVotes: rElectoralVotes};
     }
     public static getTotalDAndRElectoralVotes(electoralVoteData: ElectoralVoteData, electionData: ElectionData, year: number): TotalElectoralVoteResult {
         const results = this.getDAndRElectoralVotes(electoralVoteData, electionData, year, StateSortingOrder.None);
-        return this.getTotalDAndRElectoralVotesFromResults(results, electionData.get(year).districtResults, year);
+        return this.getTotalDAndRElectoralVotesFromResults(results, electionData.get(year).districtResults);
     }
 }
 
