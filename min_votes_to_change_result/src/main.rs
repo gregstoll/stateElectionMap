@@ -1,5 +1,6 @@
 extern crate csv;
 extern crate json;
+use json::JsonValue;
 use serde::Deserialize;
 use std::{collections::HashMap, fs::File, io::Write, path::{Path, PathBuf}};
 use std::convert::TryFrom;
@@ -20,10 +21,23 @@ struct ElectionStateResultEntry {
     total_votes: u32
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ElectionStateResultMargin {
     state_code: String,
+    d_margin: i32,
+    districts: Option<Vec<ElectionDistrictResultMargin>>
+}
+
+#[derive(Debug, Clone)]
+struct ElectionDistrictResultMargin {
+    state_code: String,
     d_margin: i32
+}
+
+#[derive(Debug, PartialEq)]
+struct KnapsackSolution {
+    indices_to_include: Option<Vec<usize>>,
+    value: usize
 }
 
 const DATA_DIR : &str = r"C:\Users\greg\Documents\stateElectionMap\stateElectionMap\public\data";
@@ -41,26 +55,18 @@ fn main() {
         let electoral_votes = get_electoral_votes_for_year(&entries.1, year);
         let knapsack_inputs = create_knapsack_inputs(&election_result.1, electoral_votes);
         let total_electoral_votes: usize = electoral_votes.values().map(|val| *val as usize).sum();
-        let necessary_electoral_votes: usize = match total_electoral_votes % 2 {
-            0 => total_electoral_votes / 2,
-            1 => (total_electoral_votes-1) / 2 + 1,
-            _ => panic!()
-        };
-        let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), necessary_electoral_votes - 1).unwrap();
-        let mut solution_index = 0;
-        let mut min_states= vec![];
-        for input_index in 0..knapsack_inputs.len() {
-            if solution_index >= solution.len() || solution[solution_index] != input_index {
-                // no match
-                min_states.push(knapsack_inputs[input_index].1);
-                println!("{:?}", knapsack_inputs[input_index]);
-            }
-            else {
-                solution_index += 1;
-            }
+        if total_electoral_votes % 2 == 1 {
+            let necessary_electoral_votes_to_win: usize = (total_electoral_votes - 1) / 2 + 1;
+            json_results[year.to_string()]["win"] =
+                calculate_knapsack_results_for_json(&knapsack_inputs, total_electoral_votes, necessary_electoral_votes_to_win);
         }
-        json_results[year.to_string()] =
-            json::JsonValue::Array(min_states.iter().map(|&s| json::JsonValue::String(s.state_code.to_string())).collect());
+        else {
+            let necessary_electoral_votes_to_tie: usize = total_electoral_votes / 2;
+            json_results[year.to_string()]["tie"] =
+                calculate_knapsack_results_for_json(&knapsack_inputs, total_electoral_votes, necessary_electoral_votes_to_tie);
+            json_results[year.to_string()]["win"] =
+                calculate_knapsack_results_for_json(&knapsack_inputs, total_electoral_votes, necessary_electoral_votes_to_tie + 1);
+        }
     }
     let json_string = json::stringify_pretty(json_results, 4);
     println!("{}", json_string);
@@ -70,7 +76,30 @@ fn main() {
     write!(&mut file, "{}", json_string).unwrap();
 }
 
-fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_votes: &'_ ElectoralVoteMap) -> Vec<(KnapsackItem, &'a ElectionStateResultMargin)> {
+fn calculate_knapsack_results_for_json(knapsack_inputs: &[(KnapsackItem, ElectionStateResultMargin)],
+    total_electoral_votes: usize, necessary_votes_for_winner: usize) -> JsonValue {
+    let max_weight = total_electoral_votes - necessary_votes_for_winner;
+    let solution = solve_knapsack_problem(&knapsack_inputs.iter().map(|(item, _)| item.clone()).collect(), max_weight);
+    let solution = solution.indices_to_include.unwrap();
+    let mut solution_index = 0;
+    let mut min_states= vec![];
+    for input_index in 0..knapsack_inputs.len() {
+        if solution_index >= solution.len() || solution[solution_index] != input_index {
+            // no match
+            min_states.push(knapsack_inputs[input_index].1.clone());
+            println!("{:?}", knapsack_inputs[input_index]);
+        }
+        else {
+            solution_index += 1;
+        }
+    }
+
+    JsonValue::Array(min_states.iter().map(|s| JsonValue::String(s.state_code.to_string())).collect())
+}
+
+// The knapsack problem here is looking for the maximum number of votes to give the winner
+// if the winner has at most EV/2 electoral votes (so, just barely losing or tying)
+fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_votes: &'_ ElectoralVoteMap) -> Vec<(KnapsackItem, ElectionStateResultMargin)> {
     // first, figure out who won.
     let mut d_votes: usize = 0;
     let mut r_votes: usize = 0;
@@ -88,13 +117,67 @@ fn create_knapsack_inputs<'a>(election_result: &'a ElectionResult, electoral_vot
     }
     let d_won = d_votes > r_votes;
     let states_for_winner = election_result.iter().filter(|result| (result.d_margin > 0) == d_won);
-    states_for_winner.map(|result|
-         (KnapsackItem {
-             weight: usize::from(*electoral_votes.get(&result.state_code).unwrap()),
-             // + 1 to change the winner (instead of a D/R tie)
-             value: usize::try_from(result.d_margin.abs() + 1).unwrap()
-         }, result)
-    ).collect()
+    let mut knapsack_items: Vec<(KnapsackItem, ElectionStateResultMargin)> = Vec::new();
+    for state_for_winner in states_for_winner {
+        match &state_for_winner.districts {
+            None => {
+                knapsack_items.push(
+                    (KnapsackItem {
+                        weight: usize::from(*electoral_votes.get(&state_for_winner.state_code).unwrap()),
+                        // + 1 to change the winner (instead of a D/R tie)
+                        value: usize::try_from(state_for_winner.d_margin.abs() + 1).unwrap()
+                    }, state_for_winner.clone()));
+            },
+            Some(districts) => {
+                // This isn't exactly right because we're double counting the votes to flip a state
+                // and a district. But I don't think the whole state of ME or NE is going to be involved
+                // in a real result.
+                // add whole state
+                knapsack_items.push((KnapsackItem {
+                    // winning statewide is worth 2
+                    weight: 2, 
+                    // + 1 to change the winner (instead of a D/R tie)
+                    value: usize::try_from(state_for_winner.d_margin.abs() + 1).unwrap()
+                },
+                ElectionStateResultMargin {
+                    state_code: state_for_winner.state_code.clone(),
+                    d_margin: state_for_winner.d_margin,
+                    districts: None
+                })); 
+                for district in districts.iter().filter(|d| (d.d_margin > 0) == d_won) {
+                    knapsack_items.push((KnapsackItem {
+                        // winning a district is worth 1
+                        weight: 1, 
+                        // + 1 to change the winner (instead of a D/R tie)
+                        value: usize::try_from(district.d_margin.abs() + 1).unwrap()
+                    },
+                    ElectionStateResultMargin {
+                        state_code: district.state_code.clone(),
+                        d_margin: district.d_margin,
+                        districts: None
+                    })); 
+                }
+            }
+        }
+    }
+    let states_for_loser = election_result.iter().filter(|result| (result.d_margin < 0) == d_won);
+    for state_for_loser in states_for_loser {
+        if let Some(districts_in_loser_state) = &state_for_loser.districts {
+            for district_in_loser_state in districts_in_loser_state {
+                if (district_in_loser_state.d_margin > 0) == d_won {
+                    knapsack_items.push(
+                        (KnapsackItem {
+                            // single district is worth 1 EV
+                            weight: 1,
+                            // + 1 to change the winner (instead of a D/R tie)
+                            value: usize::try_from(district_in_loser_state.d_margin.abs() + 1).unwrap()
+                        }, ElectionStateResultMargin { state_code: district_in_loser_state.state_code.to_owned(), d_margin: district_in_loser_state.d_margin, districts: None })
+                    );
+                }
+            }
+        }
+    }
+    return knapsack_items;
 }
 
 fn get_electoral_votes_for_year(electoral_votes: &AllElectoralVotes, year: u32) -> &ElectoralVoteMap {
@@ -120,7 +203,7 @@ struct KnapsackItem {
 }
 
 // Adapted from https://codereview.stackexchange.com/questions/188733/knapsack-0-1-in-rust
-fn solve_knapsack_problem(items: &Vec<KnapsackItem>, max_weight: usize) -> Option<Vec<usize>> {
+fn solve_knapsack_problem(items: &Vec<KnapsackItem>, max_weight: usize) -> KnapsackSolution {
     let mut prev_row : Vec<(usize, Option<Vec<usize>>)> = Vec::new();
     let mut cur_row : Vec<(usize, Option<Vec<usize>>)> = Vec::new();
     for _ in 0..(max_weight + 1) {
@@ -146,7 +229,11 @@ fn solve_knapsack_problem(items: &Vec<KnapsackItem>, max_weight: usize) -> Optio
         }
         prev_row = cur_row.clone();
     }
-    cur_row.last().unwrap().1.clone()
+    let last_row = cur_row.last().unwrap();
+    return KnapsackSolution {
+        indices_to_include: last_row.1.clone(),
+        value: last_row.0
+    }
 }
 
 fn read_all_electoral_votes() -> Result<AllElectoralVotes, Error> {
@@ -180,12 +267,32 @@ fn read_all_election_results() -> Result<AllElectionResults, Error> {
         if entry_filename.ends_with(".csv") {
             if let Ok(year) = entry_filename[0..4].parse::<u32>() {
                 let contents = read_election_result_file(&entry.path())?;
-                all_election_results.push((year,
-                    contents.iter().map(|r|
+                let mut election_results : Vec<ElectionStateResultMargin> = 
+                    contents.iter()
+                    .filter(|r| r.state_code.len() == 2)
+                    .map(|r|
                         ElectionStateResultMargin {
                             state_code: r.state_code.clone(),
-                            d_margin: i32::try_from(r.d_votes).unwrap() - i32::try_from(r.r_votes).unwrap()
-                         }).collect()));
+                            d_margin: i32::try_from(r.d_votes).unwrap() - i32::try_from(r.r_votes).unwrap(),
+                            districts: None
+                         })
+                    .collect();
+                // TODO - there's surely a better way to do this
+                for district_result in contents.iter().filter(|r| r.state_code.len() > 2) {
+                    let raw_state_code = &district_result.state_code[..2];
+                    let election_result = election_results.iter_mut().filter(|r| r.state_code == raw_state_code).next().unwrap();
+                    if election_result.districts.is_none() {
+                        election_result.districts = Some(Vec::new());
+                    }
+                    let districts = election_result.districts.as_mut().unwrap();
+                    // 1-indexed in the .csv file, so subtract one
+                    let district_index = district_result.state_code[2..].parse::<usize>().unwrap() - 1;
+                    if districts.len() < district_index + 1 {
+                        districts.resize_with(district_index + 1, || { ElectionDistrictResultMargin { state_code: "".to_owned(), d_margin: 0 }});
+                    }
+                    districts[district_index] = ElectionDistrictResultMargin { state_code: district_result.state_code.clone(), d_margin: i32::try_from(district_result.d_votes).unwrap() - i32::try_from(district_result.r_votes).unwrap() };
+                }
+                all_election_results.push((year, election_results));
             }
         }
     }
@@ -230,7 +337,8 @@ mod tests {
             KnapsackItem {weight: 4, value: 2},
             KnapsackItem {weight: 30, value: 100}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(Some(vec![1]), solution);
+        assert_eq!(Some(vec![1]), solution.indices_to_include);
+        assert_eq!(2, solution.value);
     }
 
     #[test]
@@ -240,7 +348,8 @@ mod tests {
             KnapsackItem {weight: 10, value: 20},
             KnapsackItem {weight: 30, value: 100}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(Some(vec![0]), solution);
+        assert_eq!(Some(vec![0]), solution.indices_to_include);
+        assert_eq!(2, solution.value);
     }
 
     #[test]
@@ -250,7 +359,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 100},
             KnapsackItem {weight: 4, value: 2}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(Some(vec![2]), solution);
+        assert_eq!(Some(vec![2]), solution.indices_to_include);
+        assert_eq!(2, solution.value);
     }
 
     #[test]
@@ -261,7 +371,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 100},
             KnapsackItem {weight: 4, value: 2}];
         let solution = solve_knapsack_problem(&items, 18);
-        assert_eq!(Some(vec![1, 3]), solution);
+        assert_eq!(Some(vec![1, 3]), solution.indices_to_include);
+        assert_eq!(32, solution.value);
     }
 
     #[test]
@@ -272,7 +383,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 200},
             KnapsackItem {weight: 10, value: 50}];
         let solution = solve_knapsack_problem(&items, 30);
-        assert_eq!(Some(vec![2]), solution);
+        assert_eq!(Some(vec![2]), solution.indices_to_include);
+        assert_eq!(200, solution.value);
     }
 
     #[test]
@@ -283,7 +395,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 200},
             KnapsackItem {weight: 10, value: 50}];
         let solution = solve_knapsack_problem(&items, 100);
-        assert_eq!(Some(vec![0, 1, 2, 3]), solution);
+        assert_eq!(Some(vec![0, 1, 2, 3]), solution.indices_to_include);
+        assert_eq!(300, solution.value);
     }
 
     #[test]
@@ -294,7 +407,8 @@ mod tests {
             KnapsackItem {weight: 30, value: 200},
             KnapsackItem {weight: 10, value: 50}];
         let solution = solve_knapsack_problem(&items, 9);
-        assert_eq!(None, solution);
+        assert_eq!(None, solution.indices_to_include);
+        assert_eq!(0, solution.value);
     }
 
     #[test]

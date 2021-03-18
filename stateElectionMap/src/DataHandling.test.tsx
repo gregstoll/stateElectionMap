@@ -8,7 +8,8 @@ test('data looks reasonable', async () => {
     // sigh, there are territories in here
     expect(data.stateInfos.codeToStateName.size).toBeGreaterThanOrEqual(51);
     expect(data.electionData.get(2016).nationalDAdvantage).toBeCloseTo(2.1, 2);
-    expect(data.minVotesToChangeResultData.get(2000)).toStrictEqual(["FL"]);
+    expect(data.minVotesToChangeResultData.get(2000)["tie"]).toStrictEqual(["FL"]);
+    expect(data.minVotesToChangeResultData.get(2000)["win"]).toStrictEqual(["FL"]);
 
     const validStateCodes = new Set(data.stateInfos.codeToStateName.keys());
 
@@ -17,9 +18,23 @@ test('data looks reasonable', async () => {
         for (let stateCode of Array.from(data.electionData.get(year).stateResults.keys())) {
             expect(validStateCodes).toContain(stateCode);
         }
-        expect(data.minVotesToChangeResultData.get(year).length).toBeGreaterThan(0);
-        for (let stateCode of data.minVotesToChangeResultData.get(year)) {
+        const electoralVoteData = DataUtils.getElectoralVoteDataForYear(data.electoralVoteData, year);
+        for (let stateCode of Array.from(data.electionData.get(year).districtResults.keys())) {
+            const districtsInfo = data.electionData.get(year).districtResults.get(stateCode);
             expect(validStateCodes).toContain(stateCode);
+            const expectedDistricts = electoralVoteData.get(stateCode) - 2;
+            expect([expectedDistricts, year, stateCode]).toStrictEqual([districtsInfo.length, year, stateCode]);
+            for (let i = 0; i < districtsInfo.length; ++i) {
+                expect(districtsInfo[i]).toBeDefined();
+            }
+        }
+        expect(data.minVotesToChangeResultData.get(year)["win"].length).toBeGreaterThan(0);
+        for (let stateCode of data.minVotesToChangeResultData.get(year)["win"]) {
+            expect(validStateCodes).toContain(stateCode.substring(0, 2));
+        }
+        expect(data.minVotesToChangeResultData.get(year)["tie"].length).toBeGreaterThan(0);
+        for (let stateCode of data.minVotesToChangeResultData.get(year)["tie"]) {
+            expect(validStateCodes).toContain(stateCode.substring(0, 2));
         }
     }
     for (let [_, voteData] of data.electoralVoteData) {
@@ -35,7 +50,7 @@ test('calculate electoral votes by state correctly', async () => {
     const data = await loadAllData();
     const knownTXValues : Array<[number, number]> = [[1972, 26], [1976, 26], [1980, 26], [1984, 29], [1988, 29], [1992, 32], [1996, 32], [2000, 32], [2004, 34], [2008, 34], [2012, 38], [2016, 38], [2020, 38]];
     for (let [year, evs] of knownTXValues) {
-        const actualEvs = DataUtils.getElectoralVotesForState(data.electoralVoteData, "TX", year);
+        const actualEvs = DataUtils.getElectoralVotesForStateOrDistrict(data.electoralVoteData, "TX", year);
         // assert on the year here so it's clear what year failed.  Is there a better way to do this?
         expect([year, evs]).toStrictEqual([year, actualEvs]);
     }
@@ -121,6 +136,25 @@ test('getClosestStateByPercentage', async () => {
     }
 });
 
+test('getStateOrDistrictResult', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    const neData = DataUtils.getStateOrDistrictResult(data.electionData.get(2016), "NE");
+    expect([284494, 495961, 844227, "NE"]).toStrictEqual([neData.dCount, neData.rCount, neData.totalCount, neData.stateCode]);
+    const ne1Data = DataUtils.getStateOrDistrictResult(data.electionData.get(2016), "NE1");
+    expect([100126, 158626, 282338, "NE1"]).toStrictEqual([ne1Data.dCount, ne1Data.rCount, ne1Data.totalCount, ne1Data.stateCode]);
+    const ne3Data = DataUtils.getStateOrDistrictResult(data.electionData.get(2016), "NE3");
+    expect([53290, 199657, 270039, "NE3"]).toStrictEqual([ne3Data.dCount, ne3Data.rCount, ne3Data.totalCount, ne3Data.stateCode]);
+});
+
+test('getStateOrDistrictName', async () => {
+    setupFetchMock();
+    const data = await loadAllData();
+    expect("Nebraska").toStrictEqual(DataUtils.getStateOrDistrictName(data.stateInfos, "NE"));
+    expect("Nebraska-1").toStrictEqual(DataUtils.getStateOrDistrictName(data.stateInfos, "NE1"));
+    expect("Texas-17").toStrictEqual(DataUtils.getStateOrDistrictName(data.stateInfos, "TX17"));
+});
+
 test('getNumberOfVotesToChangeWinner', () => {
     expect(DataUtils.getNumberOfVotesToChangeWinner({dCount: 10, rCount: 20, stateCode: "TX", totalCount: 35})).toEqual(11);
     expect(DataUtils.getNumberOfVotesToChangeWinner({dCount: 20, rCount: 10, stateCode: "TX", totalCount: 35})).toEqual(11);
@@ -173,9 +207,12 @@ test('colorFromDAdvantage', () => {
 function setupFetchMock() {
   // @ts-ignore
   window.fetch = async (info, init) => {
-      const url = info as string;
+      let url = info as string;
+      if (url.startsWith("stateElectionMap/")) {
+          url = url.substr("stateElectionMap/".length);
+      }
       const filePath = path.join(__dirname, "../public/", url);
-      //console.log(filePath); // data/us-state-names.tsv
+      //console.log(filePath); // stateElectionMap/data/us-state-names.tsv
       // could probably do this in a promise or something
       // This trim() call is annoying, but sometimes the files have leading spaces in the header?
       const data : string = fs.readFileSync(filePath, "utf8").trim();
