@@ -244,7 +244,6 @@ export class DataUtils {
     }
     private static getTotalDAndRElectoralVotesFromResults(stateResults: Array<ElectionStateResultWithElectoralVotes>, districtResults: Map<string, Array<ElectionStateResult>>): TotalElectoralVoteResult {
         let dElectoralVotes = 0, rElectoralVotes = 0;
-        let stateDWon = new Map<string, boolean>();
         for (let result of stateResults) {
             const dWonState = result.dCount > result.rCount;
             if (dWonState) {
@@ -257,7 +256,7 @@ export class DataUtils {
             if (stateDistrictResults !== undefined){
                 for (let districtResult of stateDistrictResults) {
                     const dWonDistrict = districtResult.dCount > districtResult.rCount;
-                    if (dWonDistrict != dWonState) {
+                    if (dWonDistrict !== dWonState) {
                         if (dWonDistrict) {
                             dElectoralVotes += 1;
                             rElectoralVotes -= 1;
@@ -291,7 +290,7 @@ function validateData(year: number, stateData: ElectionStateResult, stateInfos: 
         throw `too many third-party votes ${year} ${stateData.stateCode}`;
     }
     if (stateData.dCount > 10 * stateData.rCount) {
-        if (!(stateData.stateCode == "DC" && stateData.dCount < 30 * stateData.rCount)) {
+        if (!(stateData.stateCode === "DC" && stateData.dCount < 30 * stateData.rCount)) {
             throw `too many d's: ${year} ${stateData.stateCode}`;
         }
     }
@@ -340,7 +339,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
     let stateNamesPromise = d3.tsv(getD3Url('data/us-state-names.tsv'), cleanStateName);
     const stateNames = await stateNamesPromise;
     // Weird way to check for errors
-    if (stateNames.columns.length != 3) {
+    if (stateNames.columns.length !== 3) {
         throw "Failed to load state names data!";
     }
     const stateInfos = makeStateInfos(stateNames);
@@ -385,7 +384,7 @@ export const loadAllData = async (): Promise<DataCollection> => {
             validateDistrictData(year, electionYearData.districtResults, electionYearData.stateResults, stateInfos);
         }
         setNationalDAdvantage(electionYearData);
-        if (electionYearData.stateResults.size != 51) {
+        if (electionYearData.stateResults.size !== 51) {
             throw `Invalid data for year ${year}, got ${electionYearData.stateResults.size} stateResults: ${Array.from(electionYearData.stateResults.keys())}`;
         }
         electionData.set(year, electionYearData);
@@ -406,12 +405,12 @@ export const loadAllData = async (): Promise<DataCollection> => {
             yearVoteData.set(stateVotes[0], stateVotes[1]);
             totalElectoralVotes += stateVotes[1];
         });
-        if (yearVoteData.size != 51) {
+        if (yearVoteData.size !== 51) {
             throw "Invalid electoral data for year " + year;
         }
         // This can vary between years, but for all our data 538 is the right number
         if (VALIDATE_DATA) {
-            if (totalElectoralVotes != 538) {
+            if (totalElectoralVotes !== 538) {
                 throw `Wrong number of electoral votes ${year} ${totalElectoralVotes}`;
             }
         }

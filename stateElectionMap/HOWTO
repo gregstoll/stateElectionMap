@@ -1,1 +1,3 @@
 npm run build - do production build
+
+Note that the @semantic-ui-react/css-patch stuff is to fix this issue: https://github.com/Semantic-Org/Semantic-UI-React/issues/4287#issuecomment-1016579332

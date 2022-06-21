@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { Button } from 'semantic-ui-react';
-import * as _ from 'lodash';
 import { loadAllData, DataCollection, StateInfos, ElectionData, ElectoralVoteData, MinVotesToChangeResultData, MIN_YEAR, MAX_YEAR, YEAR_STEP, DataUtils, Utils } from './DataHandling';
 import { USStateMap, DateSlider, TickDateRange } from 'us-state-map';
 import { LineChart, BarChart } from 'react-chartkick';
@@ -153,7 +152,7 @@ class App extends React.Component<{}, AppState> {
 
     updateHash = () => {
         let newHash = undefined;
-        if (this.state.year != MAX_YEAR) {
+        if (this.state.year !== MAX_YEAR) {
             newHash = App._appendToHash(newHash, `year=${this.state.year}`);
         }
         if (this.state.selectedStateCode !== null && this.state.selectedStateCode !== undefined) {
@@ -176,7 +175,7 @@ class App extends React.Component<{}, AppState> {
     }
 
     minVoteArraysEqual = (array1: string[], array2: string[]): boolean => {
-        if (array1.length !== array1.length) {
+        if (array1.length !== array2.length) {
             return false;
         }
         for (let i = 0; i < array1.length; ++i) {
@@ -321,7 +320,7 @@ class App extends React.Component<{}, AppState> {
                 let colors = [];
                 for (let [dDiff, state] of stateDDifferences) {
                     entries.push([state, dDiff]);
-                    if (state == "National") {
+                    if (state === "National") {
                         colors.push("black");
                     }
                     else {
