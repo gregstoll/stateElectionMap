@@ -21,7 +21,7 @@
     "@types/react-dom": "^18.0.0",
     "@types/semantic-ui": "2.2.6",
     "chart.js": "^2.9.4",
-    "d3": "^6.3.1",
+    "d3": "^7.6.1",
     "es6-promise": "^4.2.8",
     "lodash": "^4.17.20",
     "parse-color": "^1.0.0",
