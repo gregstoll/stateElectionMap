@@ -9,4 +9,6 @@ How to add a new year:
 - If it's the first election after a new decade:
   - Add new electoral votes file in public/data/electoralVotes
   - Set new MAX_ELECTORAL_VOTE_YEAR in src/DataHandling.tsx
-- From here, run `npm run test`
+- In min_votes_to_change_result, do `cargo run` (this only works on Windows because of path stuff, feel free to fix that)
+- From here, run `npm run test` (this doesn't work??)
+- `npm run build`

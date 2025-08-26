@@ -40,7 +40,7 @@ struct KnapsackSolution {
     value: usize
 }
 
-const DATA_DIR : &str = r"C:\Users\greg\Documents\stateElectionMap\stateElectionMap\public\data";
+const DATA_DIR : &str = r"C:\git\stateElectionMap\stateElectionMap\public\data";
 type ElectoralVoteMap = HashMap<String, u8>;
 type AllElectoralVotes = Vec<(u32, ElectoralVoteMap)>;
 type ElectionResult = Vec<ElectionStateResultMargin>;
