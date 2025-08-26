@@ -1,3 +1,12 @@
 npm run build - do production build
 
 Note that the @semantic-ui-react/css-patch stuff is to fix this issue: https://github.com/Semantic-Org/Semantic-UI-React/issues/4287#issuecomment-1016579332
+
+How to add a new year:
+- Add new data <year>.csv to public/data/electionResults
+  - Get data from uselectionatlas.org or Wikipedia
+- Set new MAX_YEAR in src/DataHandling.tsx 
+- If it's the first election after a new decade:
+  - Add new electoral votes file in public/data/electoralVotes
+  - Set new MAX_ELECTORAL_VOTE_YEAR in src/DataHandling.tsx
+- From here, run `npm run test`
